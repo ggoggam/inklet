@@ -1,0 +1,3 @@
+[tools]
+# Also present in the workspace mise.ci.lock; no dependency on workspace variables.
+java = "temurin-17.0.19+10"

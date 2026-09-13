@@ -1,0 +1,28 @@
+# Self-contained pins so this directory also works as a separate repository.
+[tools]
+prek = "0.4.8"
+ktlint = "1.8.0"
+
+[tasks.test]
+description = "Run geometry and rendered-control tests, and compile the desktop gallery"
+run = "./gradlew --no-daemon desktopTest :demo:desktopJar"
+
+[tasks.demo]
+description = "Run the interactive desktop gallery"
+run = "./gradlew :demo:run"
+
+[tasks."ios:check"]
+description = "Compile both iOS targets (requires macOS and Xcode)"
+run = "./gradlew compileKotlinIosArm64 compileKotlinIosSimulatorArm64"
+
+[tasks.lint]
+description = "Check Kotlin formatting"
+run = 'ktlint "**/*.kt" "**/*.kts" "!**/build/**" "!**/.gradle/**"'
+
+[tasks."kt:fmt"]
+description = "Format Kotlin sources and build scripts"
+run = 'ktlint --format "**/*.kt" "**/*.kts" "!**/build/**" "!**/.gradle/**"'
+
+[tasks."pre-commit"]
+description = "Run project hooks with prek"
+run = "prek run --show-diff-on-failure --color=always --all-files --hook-stage=manual"
