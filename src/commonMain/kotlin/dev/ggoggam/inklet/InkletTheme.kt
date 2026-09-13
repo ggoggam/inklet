@@ -16,6 +16,13 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+/**
+ * Shared pen settings. [roughness] controls the base drawing's irregularity; zero is smooth.
+ * [boil] controls frame-to-frame displacement in logical dp, independently of roughness.
+ * Small indicators attenuate both amounts to keep their shapes legible. Boil is an amplitude,
+ * not a speed: the theme cycles through three drawings every 1200ms. [animate] = false or
+ * the theme's reduceMotion flag disables boil and interaction re-sketching.
+ */
 @Immutable
 data class InkletStyle(
     val roughness: Double = 1.0,

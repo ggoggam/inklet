@@ -21,11 +21,13 @@ local `local.properties` containing `sdk.dir=/path/to/android/sdk`.
 
 The gallery supports adding wishes, checking them off, selecting a radio option,
 saving a moment, changing between light and dark colors, and disabling motion.
+The pen tray has live roughness (0–3) and boil (0–1) sliders, numeric readouts,
+and a reset button. They update the entire gallery; enable motion to see boil.
 Sample data lives only in memory. To export a deterministic native rendering:
 
 ```sh
-./gradlew :sample:run --args='--snapshot /tmp/inklet.png 1120 1040'
-./gradlew :sample:run --args='--snapshot /tmp/inklet-dark.png 1120 1040 --dark'
+./gradlew :sample:run --args='--snapshot /tmp/inklet.png 1120 1320'
+./gradlew :sample:run --args='--snapshot /tmp/inklet-dark.png 1120 1320 --dark'
 ```
 
 Versions match Daytwo: Kotlin 2.4.0-RC, Compose 1.11.0, Material 3 1.9.0, AGP 9.2.1,
@@ -67,9 +69,11 @@ Without an explicit seed, a control keeps a random seed for its composition life
 | `InkletCard`, `InkletBadge`, `InkletDivider` | Sketched surfaces and labels |
 | `InkletCheckbox`, `InkletRadioButton`, `InkletToggle` | Native selection semantics with at least 48dp touch targets |
 | `InkletTextField` | Native editable input; set `singleLine = false` for a textarea |
+| `InkletSlider` | Continuous Material slider with sketched thumb/track and native input behavior |
 | `Modifier.inkletBorder()` | Add a pen outline to existing controls, including custom editors |
+| `Modifier.inkletSurface()` | Sketch a filled container behind an existing component's content |
 | `Modifier.inkletDecoration()` | Underline, highlight, or circle around a label/block |
-| `InkletTheme`, `InkletStyle` | Shared animation clock, roughness, stroke width, and motion override |
+| `InkletTheme`, `InkletStyle` | Shared animation clock, roughness, boil, stroke width, and motion override |
 | `Rough` | Lines, rounded rectangles, circles, ellipses, checkmarks, arrows, scribble fills, and boil variants |
 
 Label standalone selection controls with a content description or a labelled parent.
@@ -82,11 +86,26 @@ upstream composite (tooltip, pager, tabs, etc.), or the optional Drawably Pen fo
 Decorations surround one layout block; they do not detect individual lines in
 wrapped text. Use native menus and compose additional patterns from these primitives.
 
+## Material 3 coverage
+
+Inklet can grow into a companion design system for Material 3. `InkletTheme` supplies
+pen settings to Inklet components; it does **not** automatically restyle arbitrary
+Material composables. Use shared drawing modifiers for containers and small adapters
+for component-specific slots. Keep Material responsible for input, focus, layout,
+state and accessibility wherever its API permits. `InkletSlider` demonstrates this
+by replacing only Material's thumb and track slots.
+
+See the [coverage and public-library plan](docs/material3-coverage.md) for the
+supported APIs, remaining component families, extension example and release criteria.
+
 ## Rendering and motion
 
 `Rough.kt` adapts upstream `src/rough.ts` and `src/prng.ts`: Mulberry32, 8-unit
 sampling, two jittered passes, midpoint quadratic curves, and three subtle boil
 frames. Geometry uses dp and converts to pixels once when the draw cache is built.
+Small controls attenuate jitter to preserve their silhouettes. Checkmarks use a
+single perturbed gesture; radio dots use a softly irregular filled loop. Closed
+outlines are smoothed through their seam.
 Only the selected frame changes during drawing; geometry is not regenerated on
 each animation tick. The whole theme shares one clock, with three visible updates
 per 1200ms. Interactive controls re-sketch on press, focus, and pointer entry.
@@ -96,6 +115,22 @@ explicitly removes animation and interaction re-sketching. A control outside a
 `InkletTheme` renders statically. Keep the host's existing platform accessibility
 and lifecycle handling. Daytwo uses a gentler style (roughness 0.7, boil 0.2, 1dp ink)
 and keeps its existing Korean typography and light/dark palettes.
+
+```kotlin
+InkletTheme(
+    style = InkletStyle(roughness = 1.0, boil = 0.3, strokeWidth = 1.2.dp),
+    reduceMotion = false,
+) {
+    // All Inklet drawing in this subtree shares these settings.
+}
+```
+
+Roughness changes the base drawing; zero gives smooth geometry. Boil is independent
+frame-to-frame displacement, not animation speed; zero stops the idle boil.
+`animate = false` or `reduceMotion = true` also disables interaction re-sketching.
+Both values accept finite nonnegative numbers; the sample ranges are useful preview
+ranges, not API limits. Very large values can collapse small shapes. Use a nested
+`InkletTheme` to style a subsection independently.
 
 ## Development
 

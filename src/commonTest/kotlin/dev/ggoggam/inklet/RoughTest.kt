@@ -59,6 +59,39 @@ class RoughTest {
         assertTrue(Rough.ellipse(0.0, 0.0, 0.0, 0.0, o).isEmpty())
         assertTrue(Rough.roundedRect(0.0, 0.0, -1.0, 20.0, 12.0, o).isEmpty())
         assertTrue(Rough.scribble(0.0, 0.0, 0.0, 12.0, o).isEmpty())
+        assertTrue(Rough.checkmark(0.0, 0.0, 0.0, 12.0, o).isEmpty())
+        assertTrue(Rough.dot(0.0, 0.0, 0.0, o).isEmpty())
+    }
+
+    @Test
+    fun indicatorsRemainRecognizableAcrossTheGalleryRange() {
+        for (seed in 0..30) {
+            for (roughness in listOf(0.0, 1.0, 3.0)) {
+                val options = RoughOptions(seed, roughness, boil = 0.0)
+                val check = Rough.checkmark(0.0, 0.0, 20.0, 18.0, options).single().points
+                // The downstroke still reaches a valley, then rises to the far endpoint.
+                assertTrue(check[2].y > check.first().y)
+                assertTrue(check[2].y > check.last().y)
+                assertTrue(check.first().x < check.last().x)
+                val dot = Rough.dot(0.0, 0.0, 5.0, options).single()
+                assertTrue(dot.closed)
+                dot.points.forEach {
+                    val radius = kotlin.math.hypot(it.x, it.y)
+                    assertTrue(radius in 3.49..6.51)
+                }
+                assertEquals(dot, Rough.dot(0.0, 0.0, 5.0, options).single())
+            }
+        }
+    }
+
+    @Test
+    fun roughnessAndBoilCanBeAdjustedIndependently() {
+        val smooth = RoughOptions(42, roughness = 0.0, boil = 0.0)
+        val straight = Rough.line(0.0, 0.0, 100.0, 0.0, smooth)
+        assertTrue(straight.flatMap { it.points }.all { it.y == 0.0 })
+        assertNotEquals(straight, Rough.line(0.0, 0.0, 100.0, 0.0, smooth.copy(roughness = 1.0)))
+        val frames = Rough.variants(smooth.copy(boil = 0.5)) { Rough.line(0.0, 0.0, 100.0, 0.0, it) }
+        assertNotEquals(frames[0], frames[1])
     }
 
     @Test

@@ -22,6 +22,19 @@ internal fun List<PenStroke>.toPenPath(density: Float): Path =
         for (stroke in this@toPenPath) {
             val points = stroke.points
             if (points.isEmpty()) continue
+            if (stroke.closed && points.size > 2) {
+                // Smooth through the closing seam as well as the rest of the loop.
+                val last = points.last()
+                val first = points.first()
+                moveTo(((last.x + first.x) / 2).px(), ((last.y + first.y) / 2).px())
+                for (i in points.indices) {
+                    val p = points[i]
+                    val next = points[(i + 1) % points.size]
+                    quadraticTo(p.x.px(), p.y.px(), ((p.x + next.x) / 2).px(), ((p.y + next.y) / 2).px())
+                }
+                close()
+                continue
+            }
             moveTo(points.first().x.px(), points.first().y.px())
             for (i in 1 until points.lastIndex) {
                 val p = points[i]
@@ -35,7 +48,7 @@ internal fun List<PenStroke>.toPenPath(density: Float): Path =
 
 enum class InkletDecoration { Underline, Highlight, Circle }
 
-internal enum class PenShape { Rectangle, Ellipse, Line, Check }
+internal enum class PenShape { Rectangle, Ellipse, Line, Check, Dot }
 
 /** Draw over existing native controls without replacing their input, focus, or semantics. */
 @Composable
@@ -44,6 +57,19 @@ fun Modifier.inkletBorder(
     cornerRadius: Dp = 12.dp,
     seed: Int? = null,
 ): Modifier = sketch(PenShape.Rectangle, color, cornerRadius = cornerRadius, seed = seed)
+
+/**
+ * Sketch a container behind its content. Set the host component's own container and border
+ * colors to transparent. This changes drawing only; the host owns input, layout and semantics.
+ */
+@Composable
+fun Modifier.inkletSurface(
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    ink: Color = MaterialTheme.colorScheme.outline,
+    cornerRadius: Dp = 12.dp,
+    scribble: Boolean = false,
+    seed: Int? = null,
+): Modifier = sketch(PenShape.Rectangle, ink, containerColor, cornerRadius, scribble, seed)
 
 /** A decoration for a single label/block. For wrapped text, decorate individual Text spans. */
 @Composable
@@ -88,9 +114,10 @@ internal fun Modifier.sketch(
     return drawWithCache {
         val w = size.width / density.toDouble()
         val h = size.height / density.toDouble()
-        // Leave enough room for both pen passes and their rounded stroke caps inside the bounds.
-        val inset = (2.1 * style.roughness + style.boil + style.strokeWidth.value / 2).coerceAtMost(minOf(w, h) / 2)
-        val options = RoughOptions(mountSeed, style.roughness, if (style.animate) style.boil else 0.0)
+        // Small indicators need a lighter hand than card outlines. Lines retain their amplitude.
+        val scale = if (shape == PenShape.Line) 1.0 else (minOf(w, h) / 48.0).coerceAtMost(1.0)
+        val options = RoughOptions(mountSeed, style.roughness * scale, if (style.animate) style.boil * scale else 0.0)
+        val inset = (2.1 * options.roughness + options.boil + style.strokeWidth.value / 2).coerceAtMost(minOf(w, h) / 2)
         val frames =
             Rough.variants(options) { o ->
                 when (shape) {
@@ -109,6 +136,10 @@ internal fun Modifier.sketch(
 
                     PenShape.Check -> {
                         Rough.checkmark(inset, inset, w - inset * 2, h - inset * 2, o)
+                    }
+
+                    PenShape.Dot -> {
+                        Rough.dot(w / 2, h / 2, (minOf(w, h) / 2 - inset) / 1.3, o)
                     }
                 }
             }

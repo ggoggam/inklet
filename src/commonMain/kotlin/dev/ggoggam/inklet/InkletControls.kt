@@ -165,7 +165,7 @@ fun InkletCheckbox(
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(28.dp).sketch(PenShape.Rectangle, ink, cornerRadius = 3.dp, seed = sketchSeed))
-        if (checked) Box(Modifier.size(24.dp).sketch(PenShape.Check, ink, seed = sketchSeed))
+        if (checked) Box(Modifier.size(20.dp, 18.dp).sketch(PenShape.Check, ink, seed = sketchSeed + 1))
     }
 }
 
@@ -193,7 +193,7 @@ fun InkletRadioButton(
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(30.dp).sketch(PenShape.Ellipse, ink, seed = sketchSeed))
-        if (selected) Box(Modifier.size(18.dp).sketch(PenShape.Ellipse, ink, ink, seed = sketchSeed))
+        if (selected) Box(Modifier.size(18.dp).sketch(PenShape.Dot, ink, ink, seed = sketchSeed + 1))
     }
 }
 

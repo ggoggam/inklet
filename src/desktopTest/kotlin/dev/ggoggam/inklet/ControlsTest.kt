@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
@@ -101,6 +102,70 @@ class ControlsTest {
         }
     }
 
+    @Test
+    fun sliderPreservesNativeProgressRangeCallbacksAndDisabledBehavior() {
+        var value by mutableStateOf(1f)
+        var finished = 0
+        withScene({
+            Column {
+                InkletSlider(value, { value = it }, labelled("roughness"), valueRange = 0f..3f, onValueChangeFinished = { finished++ })
+                InkletSlider(value, { value = it }, labelled("locked slider"), enabled = false, valueRange = 0f..3f)
+            }
+        }) { scene ->
+            val slider = scene.node("roughness")
+            assertEquals(ProgressBarRangeInfo(1f, 0f..3f), slider.config[SemanticsProperties.ProgressBarRangeInfo])
+            assertTrue(slider.boundsInRoot.height >= 48)
+            slider.config[SemanticsActions.SetProgress].action!!.invoke(2f)
+            assertEquals(2f, value)
+            assertEquals(1, finished)
+            scene.render().close()
+            assertEquals(2f, scene.node("roughness").config[SemanticsProperties.ProgressBarRangeInfo].current)
+            val locked = scene.node("locked slider")
+            assertTrue(locked.config.contains(SemanticsProperties.Disabled))
+            locked.config[SemanticsActions.SetProgress].action!!.invoke(0f)
+            assertEquals(2f, value)
+        }
+    }
+
+    @Test
+    fun liveStyleUpdatesRedrawIndicatorsAndRestoringStyleRestoresPixels() {
+        var style by mutableStateOf(InkletStyle(roughness = 0.0, animate = false))
+        withScene({
+            InkletTheme(style) {
+                Column {
+                    InkletCheckbox(true, {}, seed = 42)
+                    InkletRadioButton(true, {}, seed = 43)
+                }
+            }
+        }) { scene ->
+            fun pixels() = scene.render().use { image -> image.encodeToData()!!.use { it.bytes } }
+            val smooth = pixels()
+            style = style.copy(roughness = 3.0)
+            assertFalse(smooth.contentEquals(pixels()))
+            style = style.copy(roughness = 0.0)
+            assertTrue(smooth.contentEquals(pixels()))
+        }
+    }
+
+    @Test
+    fun boilChangesFramesAndReducedMotionSuppressesIt() {
+        var reduceMotion by mutableStateOf(false)
+        withScene({
+            InkletTheme(InkletStyle(boil = 1.0), reduceMotion = reduceMotion) {
+                InkletRadioButton(true, {}, seed = 42)
+            }
+        }) { scene ->
+            fun pixels(time: Long) = scene.render(time).use { image -> image.encodeToData()!!.use { it.bytes } }
+            val first = pixels(0)
+            // Feed frames as a window does, including the animation's initial effect frames.
+            for (i in 1..9) scene.render(i * 50_000_000L).close()
+            assertFalse(first.contentEquals(pixels(500_000_000)))
+            reduceMotion = true
+            val still = pixels(600_000_000)
+            assertTrue(still.contentEquals(pixels(1_100_000_000)))
+        }
+    }
+
     private fun labelled(label: String) = Modifier.semantics { contentDescription = label }
 
     private fun ImageComposeScene.node(label: String): SemanticsNode {
@@ -116,7 +181,7 @@ class ControlsTest {
     ) {
         val scene = ImageComposeScene(400, 500) { MaterialTheme { InkletTheme(reduceMotion = true, content = content) } }
         try {
-            scene.render().close()
+            scene.render(0).close()
             test(scene)
         } finally {
             scene.close()

@@ -167,10 +167,42 @@ object Rough {
         h: Double,
         o: RoughOptions,
     ): List<PenStroke> {
+        if (w <= 0 || h <= 0) return emptyList()
+        // Perturb the gesture's anchors, not every sample: a wrist makes two flowing strokes.
+        val anchors =
+            jitter(
+                listOf(
+                    PenPoint(x, y + h * 0.48),
+                    PenPoint(x + w * 0.16, y + h * 0.72),
+                    PenPoint(x + w * 0.32, y + h * 0.92),
+                    PenPoint(x + w * 0.63, y + h * 0.35),
+                    PenPoint(x + w, y),
+                ),
+                Mulberry32(o.seed),
+                min(w, h) * 0.055 * o.roughness,
+            )
+        return listOf(PenStroke(boil(anchors, o)))
+    }
+
+    /** A single softly irregular filled mark, without doubled outlines at dot scale. */
+    fun dot(
+        cx: Double,
+        cy: Double,
+        radius: Double,
+        o: RoughOptions,
+    ): List<PenStroke> {
+        if (radius <= 0) return emptyList()
+        val random = Mulberry32(o.seed)
+        val phase = random.nextDouble() * 2 * PI
+        val phase2 = random.nextDouble() * 2 * PI
+        val amplitude = (o.roughness * 0.12).coerceAtMost(0.3)
         val points =
-            sampleLine(x, y + h * 0.6, x + w * 0.35, y + h, 4.0) +
-                sampleLine(x + w * 0.35, y + h, x + w, y, 4.0)
-        return listOf(PenStroke(boil(jitter(points, Mulberry32(o.seed), 1.2 * o.roughness), o)))
+            List(20) { i ->
+                val angle = i * 2 * PI / 20
+                val r = radius * (1 + amplitude * (0.65 * sin(2 * angle + phase) + 0.35 * sin(3 * angle + phase2)))
+                PenPoint(cx + r * cos(angle), cy + r * sin(angle))
+            }
+        return listOf(PenStroke(boil(points, o), closed = true))
     }
 
     fun arrow(

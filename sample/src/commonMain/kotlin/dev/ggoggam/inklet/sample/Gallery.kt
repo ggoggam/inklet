@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -19,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +42,8 @@ import dev.ggoggam.inklet.InkletCheckbox
 import dev.ggoggam.inklet.InkletDecoration
 import dev.ggoggam.inklet.InkletDivider
 import dev.ggoggam.inklet.InkletRadioButton
+import dev.ggoggam.inklet.InkletSlider
+import dev.ggoggam.inklet.InkletStyle
 import dev.ggoggam.inklet.InkletTextField
 import dev.ggoggam.inklet.InkletTheme
 import dev.ggoggam.inklet.InkletToggle
@@ -54,6 +59,8 @@ fun Gallery(
     var dark by remember { mutableStateOf(initialDark) }
     SideEffect { onDarkChanged(dark) }
     var motion by remember { mutableStateOf(!static) }
+    var roughness by remember { mutableFloatStateOf(1f) }
+    var boil by remember { mutableFloatStateOf(0.3f) }
     val colors =
         if (dark) {
             darkColorScheme(
@@ -78,7 +85,7 @@ fun Gallery(
             )
         }
     MaterialTheme(colorScheme = colors) {
-        InkletTheme(reduceMotion = !motion) {
+        InkletTheme(style = InkletStyle(roughness = roughness.toDouble(), boil = boil.toDouble()), reduceMotion = !motion) {
             Column(
                 Modifier
                     .fillMaxSize()
@@ -111,12 +118,32 @@ fun Gallery(
                     if (maxWidth < 740.dp) {
                         Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                             OurList(Modifier.fillMaxWidth())
-                            PenTray(Modifier.fillMaxWidth(), motion, { motion = it }, dark, { dark = it })
+                            PenTray(
+                                modifier = Modifier.fillMaxWidth(),
+                                motion = motion,
+                                setMotion = { motion = it },
+                                dark = dark,
+                                setDark = { dark = it },
+                                roughness = roughness,
+                                setRoughness = { roughness = it },
+                                boil = boil,
+                                setBoil = { boil = it },
+                            )
                         }
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
                             OurList(Modifier.weight(1.2f))
-                            PenTray(Modifier.weight(1f), motion, { motion = it }, dark, { dark = it })
+                            PenTray(
+                                modifier = Modifier.weight(1f),
+                                motion = motion,
+                                setMotion = { motion = it },
+                                dark = dark,
+                                setDark = { dark = it },
+                                roughness = roughness,
+                                setRoughness = { roughness = it },
+                                boil = boil,
+                                setBoil = { boil = it },
+                            )
                         }
                     }
                 }
@@ -227,6 +254,10 @@ private fun PenTray(
     setMotion: (Boolean) -> Unit,
     dark: Boolean,
     setDark: (Boolean) -> Unit,
+    roughness: Float,
+    setRoughness: (Float) -> Unit,
+    boil: Float,
+    setBoil: (Float) -> Unit,
 ) {
     var selected by remember { mutableIntStateOf(0) }
     var saved by remember { mutableStateOf(false) }
@@ -248,7 +279,7 @@ private fun PenTray(
             ) { Text("Leave room for a little magic") }
             InkletDivider(seed = 44)
             Text("Who is this plan for?", style = MaterialTheme.typography.labelLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("Us", "Me").forEachIndexed { index, name ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         InkletRadioButton(
@@ -263,6 +294,19 @@ private fun PenTray(
                 }
             }
             InkletDivider(seed = 45)
+            PenSetting("Roughness", "Smooth to loosely sketched", roughness, 0f..3f, setRoughness, seed = 60)
+            PenSetting("Boil", "How much the ink moves", boil, 0f..1f, setBoil, seed = 61)
+            if (!motion) {
+                Text("Turn on motion to preview boil.", style = MaterialTheme.typography.bodySmall)
+            }
+            InkletButton(
+                {
+                    setRoughness(1f)
+                    setBoil(0.3f)
+                },
+                variant = InkletVariant.Outline,
+                seed = 62,
+            ) { Text("Reset pen settings") }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("A little motion")
                 InkletToggle(motion, setMotion, Modifier.semantics { contentDescription = "A little motion" }, seed = 46)
@@ -278,5 +322,32 @@ private fun PenTray(
                 modifier = Modifier.inkletDecoration(InkletDecoration.Highlight, seed = 48).padding(6.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun PenSetting(
+    label: String,
+    description: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    onValueChange: (Float) -> Unit,
+    seed: Int,
+) {
+    Column {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, style = MaterialTheme.typography.labelLarge)
+            val tenths = kotlin.math.round(value * 10).toInt()
+            Text("${tenths / 10}.${tenths % 10}", style = MaterialTheme.typography.labelLarge)
+        }
+        Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        InkletSlider(
+            value,
+            onValueChange,
+            Modifier.fillMaxWidth().semantics { contentDescription = label },
+            valueRange = range,
+            colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+            seed = seed,
+        )
     }
 }
