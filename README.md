@@ -36,12 +36,14 @@ Sample data lives only in memory. To export a deterministic native rendering:
 ./gradlew :sample:run --args='--snapshot /tmp/inklet-dark.png 1120 1700 --dark'
 ```
 
-Versions match Daytwo: Kotlin 2.4.0-RC, Compose 1.11.0, Material 3 1.9.0, AGP 9.2.1,
-Gradle 9.4.1. This project does not depend on Daytwo's source, resources, or backend.
+Toolchain: Kotlin 2.4.0-RC, Compose 1.11.0, Material 3 1.9.0, AGP 9.2.1,
+Gradle 9.4.1.
 
 ## Use from another app
 
-Add the standalone build in the consumer's `settings.gradle.kts`:
+Inklet is being prepared for Maven Central; no version has been released yet.
+Until the first release, clone this repository beside your app and add the build
+in the consumer's `settings.gradle.kts`:
 
 ```kotlin
 includeBuild("../inklet")
@@ -50,8 +52,13 @@ includeBuild("../inklet")
 Add this to `commonMain.dependencies`:
 
 ```kotlin
-implementation("dev.ggoggam.inklet:inklet:0.1.0")
+implementation("dev.ggoggam.inklet:inklet:0.1.0-LOCAL")
 ```
+
+After a release, use `mavenCentral()` and the released version of
+`dev.ggoggam.inklet:inklet` in place of the composite build. Gradle selects the
+Android, iOS or desktop artifact automatically. See [releasing](CONTRIBUTING.md#releasing)
+for the publication process.
 
 Wrap the existing Material theme once:
 
@@ -111,7 +118,7 @@ Radio groups should use Compose's `selectableGroup()` on their parent. `InkletCa
 is a non-interactive container; use the native clickable card
 [recipe](docs/container-recipes.md#cards-and-surfaces) when appropriate.
 
-This first native version covers the renderer and the controls used by Daytwo.
+This first native version covers the renderer and common Material controls.
 It does not reproduce the DOM attach/destroy API, browser select styling, every
 upstream composite (tooltip, pager, tabs, etc.), or the optional Drawably Pen font.
 Decorations surround one layout block; they do not detect individual lines in
@@ -370,13 +377,12 @@ mise run ios:compile     # macOS with Xcode; compile both supported iOS targets
 mise run dev:ios         # build, install and launch the iOS gallery on a simulator
 ```
 
-The sample follows Basket's shared Compose UI and thin app-host structure:
+The sample shares its Compose UI between thin platform hosts:
 `sample/src/commonMain/` contains the gallery, `sample/androidApp/` hosts it on
 Android, and `sample/iosApp/` hosts it on iOS. Desktop windowing and snapshot export
 live in `sample/src/desktopMain/`.
 
-The `dev:*` tasks build, install, and launch the gallery using Basket's device
-preferences. Android uses a connected phone first, then a running emulator, and
+The `dev:*` tasks build, install, and launch the gallery. Android uses a connected phone first, then a running emulator, and
 starts the first AVD if neither is present. Set `ANDROID_SERIAL` to select a
 specific connected, authorized device. Android launch needs `adb` and the `android`
 CLI on `PATH`; starting an emulator also needs an existing AVD.
@@ -397,17 +403,12 @@ INKLET_SIM="iPhone 17 Pro" mise run dev:ios
 ```
 
 `mise run kt:fmt` formats Kotlin; `mise run lint` checks without changing files.
-Install Git hooks with `mise exec -- prek install`. Each project owns its hook
-configuration; the workspace uses prek's monorepo discovery.
+Install Git hooks with `mise exec -- prek install`.
 
-The monorepo registers Inklet in its project catalog and mise config roots. Its
-Linux CI runs pre-commit and desktop tests independently of Daytwo. The workflow
-in `.github/workflows/ci.yml` becomes active when this directory is the root of a
-separate repository; it needs no Daytwo files or repository secrets.
-
-Daytwo consumes the sibling with `includeBuild("../inklet")`, with an optional
-`-Pinklet.path=/path/to/inklet` override. Future standalone checkout and publication
-instructions are in [CONTRIBUTING.md](CONTRIBUTING.md).
+[CI](.github/workflows/ci.yml) runs pre-commit checks, desktop tests, sample
+compilation and Android library compilation. Releases reuse that workflow before
+publishing every library target from macOS. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for local publication and Maven Central setup.
 
 ## Validation
 
@@ -431,8 +432,7 @@ Desktop scene tests render real Compose components through Skia.
 ## Attribution
 
 Original Drawably by Daniel Belyi, [MIT licensed](LICENSE). The upstream copyright
-and permission notice are preserved, including a copy in Daytwo's bundled Compose
-resources (`files/drawably-LICENSE.txt`). This is an independent native port, not an
+and permission notice are preserved in [LICENSE](LICENSE). This is an independent native port, not an
 official upstream package. Upstream sources reviewed on 2026-09-13:
 [rough.ts](https://github.com/Danilaa1/drawably/blob/main/src/rough.ts) and
 [prng.ts](https://github.com/Danilaa1/drawably/blob/main/src/prng.ts).

@@ -1,4 +1,9 @@
-# Self-contained pins so this directory also works as a separate repository.
+# Standalone toolchain; CI also loads the JDK from mise.ci.toml.
+min_version = "2026.8.5"
+
+[settings]
+lockfile = true
+
 [tools]
 prek = "0.4.8"
 ktlint = "1.8.0"
@@ -75,7 +80,7 @@ if [ "$(uname -s)" != Darwin ] || [ "$(uname -m)" != arm64 ]; then
   exit 1
 fi
 
-# Match Basket: explicit choice, booted simulator, then the first available iPhone.
+# Prefer an explicit choice, a booted simulator, then the first available iPhone.
 # Parse JSON so names shared by multiple runtimes can be disambiguated with a UDID.
 devices="$(xcrun simctl list devices available --json)"
 udid="$(python3 -c '
@@ -111,7 +116,7 @@ xcrun simctl boot "$udid" 2>/dev/null || true
 open -a Simulator --args -CurrentDeviceUDID "$udid"
 xcrun simctl bootstatus "$udid" -b
 echo "Target iOS simulator: $udid"
-# The Xcode build phase builds and embeds :sample's Kotlin framework, as in Basket.
+# The Xcode build phase builds and embeds :sample's Kotlin framework.
 dd="{{ config_root }}/sample/build/ios"
 xcodebuild -project sample/iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
   -destination "platform=iOS Simulator,id=$udid" -derivedDataPath "$dd" build
@@ -132,3 +137,11 @@ run = 'ktlint --format "**/*.kt" "**/*.kts" "!**/build/**" "!**/.gradle/**"'
 [tasks."pre-commit"]
 description = "Run project hooks with prek"
 run = "prek run --show-diff-on-failure --color=always --all-files --hook-stage=manual"
+
+[tasks.publish]
+description = "Publish all library targets to Maven Central (requires macOS, credentials and signing key)"
+run = "./gradlew --no-daemon --no-configuration-cache publishAndReleaseToMavenCentral"
+
+[tasks."publish:local"]
+description = "Publish all library targets to Maven Local without signing (requires macOS)"
+run = "./gradlew --no-daemon --no-configuration-cache publishToMavenLocal -PsignAllPublications=false"

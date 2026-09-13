@@ -1,5 +1,3 @@
-# Active when Inklet is extracted into its own repository. In the monorepo,
-# the root project catalog runs the same mise tasks.
 name: CI
 
 on:
@@ -7,12 +5,14 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
+  merge_group:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -26,11 +26,13 @@ jobs:
       - uses: jdx/mise-action@v3
         with:
           version: "2026.8.5"
+          install_args: "--locked"
       - uses: android-actions/setup-android@v3
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
       - run: mise run pre-commit
       - run: mise run test
+      - run: mise run android:compile
       - uses: actions/upload-artifact@v4
         if: always()
         with:

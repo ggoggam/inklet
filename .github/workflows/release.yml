@@ -1,0 +1,120 @@
+name: Release
+
+# As in Vitre, a committed version bump is the release; tags record successful publishes.
+on:
+  push:
+    branches: [main]
+    paths: [gradle.properties]
+
+permissions:
+  contents: read
+
+env:
+  MISE_ENV: ci
+
+# Never cancel an upload that may already have reached Central.
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check.outputs.release }}
+      version: ${{ steps.check.outputs.version }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - id: check
+        env:
+          BEFORE: ${{ github.event.before }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curr=$(sed -n 's/^VERSION_NAME=//p' gradle.properties)
+          prev=$(git show "$BEFORE:gradle.properties" 2>/dev/null | sed -n 's/^VERSION_NAME=//p' || true)
+          if [ "$curr" = "$prev" ]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$curr" in
+            *-LOCAL|*-SNAPSHOT)
+              echo "::notice::Skipping development version $curr"
+              echo "release=false" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
+          if ! printf '%s' "$curr" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'; then
+            echo "::error::Expected VERSION_NAME=MAJOR.MINOR.PATCH[-prerelease]"
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$curr" >/dev/null; then
+            echo "::error::v$curr already exists; bump VERSION_NAME"
+            exit 1
+          fi
+          prerelease=false
+          case "$curr" in *-*) prerelease=true ;; esac
+          echo "release=true" >> "$GITHUB_OUTPUT"
+          echo "version=$curr" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: decide
+    if: needs.decide.outputs.release == 'true'
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: [decide, test]
+    if: needs.decide.outputs.release == 'true'
+    # A Mac can publish every target, including both Apple klibs.
+    runs-on: macos-latest
+    environment: maven-central
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: jdx/mise-action@v3
+        with:
+          version: "2026.8.5"
+          install_args: "--locked"
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Publish to Maven Central
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for key in ORG_GRADLE_PROJECT_mavenCentralUsername ORG_GRADLE_PROJECT_mavenCentralPassword ORG_GRADLE_PROJECT_signingInMemoryKey; do
+            if [ -z "${!key}" ]; then
+              echo "::error::Missing $key in the maven-central environment"
+              exit 1
+            fi
+          done
+          mise run publish
+      - name: Tag the release
+        env:
+          VERSION: ${{ needs.decide.outputs.version }}
+        run: |
+          set -euo pipefail
+          git tag "v$VERSION" "$GITHUB_SHA"
+          git push origin "v$VERSION"
+      - name: Create the GitHub release
+        env:
+          VERSION: ${{ needs.decide.outputs.version }}
+          PRERELEASE: ${{ needs.decide.outputs.prerelease }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--title "v$VERSION" --generate-notes)
+          if [ "$PRERELEASE" = true ]; then
+            args+=(--prerelease)
+          fi
+          gh release create "v$VERSION" "${args[@]}"

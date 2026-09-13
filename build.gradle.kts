@@ -4,11 +4,12 @@ plugins {
     id("org.jetbrains.compose") version "1.11.0"
     id("org.jetbrains.kotlin.plugin.compose") version "2.4.0-RC"
     id("com.android.application") version "9.2.1" apply false
-    `maven-publish`
+    id("com.vanniktech.maven.publish") version "0.37.0"
+    id("org.jetbrains.dokka") version "2.2.0"
 }
 
-group = "dev.ggoggam.inklet"
-version = "0.1.0"
+group = providers.gradleProperty("GROUP").get()
+version = providers.gradleProperty("VERSION_NAME").get()
 
 kotlin {
     android {
