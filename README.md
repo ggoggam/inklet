@@ -22,7 +22,8 @@ local `local.properties` containing `sdk.dir=/path/to/android/sdk`.
 The gallery supports adding wishes, checking them off, selecting a radio option,
 saving a moment, changing between light and dark colors, and disabling motion.
 The pen tray has live roughness (0–3) and boil (0–1) sliders, numeric readouts,
-and a reset button. They update the entire gallery; enable motion to see boil.
+and a reset button. Roughness defaults to 0.3. They update the entire gallery;
+enable motion to see boil.
 Linear and circular indicators show wish completion and indeterminate loading.
 Check wishes to change progress; loading keeps moving with boil set to zero.
 Sample data lives only in memory. To export a deterministic native rendering:
@@ -150,7 +151,7 @@ and keeps its existing Korean typography and light/dark palettes.
 
 ```kotlin
 InkletTheme(
-    style = InkletStyle(roughness = 1.0, boil = 0.3, strokeWidth = 1.2.dp),
+    style = InkletStyle(roughness = 0.3, boil = 0.3, strokeWidth = 1.2.dp),
     reduceMotion = false,
 ) {
     // All Inklet drawing in this subtree shares these settings.

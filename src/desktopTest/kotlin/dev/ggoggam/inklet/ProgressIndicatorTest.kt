@@ -30,6 +30,7 @@ import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.math.hypot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -155,6 +156,38 @@ class ProgressIndicatorTest {
     }
 
     @Test
+    fun circularLoadingStaysOnTheRingThroughoutEachLap() {
+        withScene({
+            InkletTheme(InkletStyle(roughness = 0.0, boil = 0.0)) { indicator(circular = true) }
+        }) { scene ->
+            // Include every seam crossing and the exact endpoint of two 6000ms growth cycles.
+            for (millis in 0L..12000L step 30) {
+                val pixels = scene.redPixels(millis * 1_000_000)
+                assertTrue(pixels.isNotEmpty(), "Missing arc at ${millis}ms")
+                assertTrue(
+                    pixels.all { (x, y) -> hypot(x + 0.5f - 20f, y + 0.5f - 20f) in 18f..21f },
+                    "Arc left the ring at ${millis}ms",
+                )
+            }
+        }
+    }
+
+    @Test
+    fun circularLoadingDoesNotDropTheTailAtThePathSeamOrLoopBoundary() {
+        withScene({
+            InkletTheme(InkletStyle(roughness = 0.0, boil = 0.0)) { indicator(circular = true) }
+        }) { scene ->
+            var previous = scene.redPixels(0).toSet()
+            for (millis in 10L..12000L step 10) {
+                val current = scene.redPixels(millis * 1_000_000).toSet()
+                val changed = (previous - current).size + (current - previous).size
+                assertTrue(changed < 25, "Arc jumped at ${millis}ms: $changed pixels changed")
+                previous = current
+            }
+        }
+    }
+
+    @Test
     fun platformDisabledAnimationsLeaveAVisibleStaticLoadingStroke() {
         val disabledMotion =
             object : MotionDurationScale {
@@ -169,6 +202,12 @@ class ProgressIndicatorTest {
                 val still = scene.pixels(500_000_000)
                 assertTrue(still.contentEquals(scene.pixels(1_000_000_000)))
                 assertTrue(scene.redPixels(1_100_000_000).isNotEmpty())
+                if (circular) {
+                    assertTrue(
+                        scene.redPixels(1_100_000_000).all { (x, y) -> hypot(x + 0.5f - 20f, y + 0.5f - 20f) in 14f..21f },
+                        "Disabled animations must leave an arc on the ring, without a diagonal from the path origin",
+                    )
+                }
             }
         }
     }

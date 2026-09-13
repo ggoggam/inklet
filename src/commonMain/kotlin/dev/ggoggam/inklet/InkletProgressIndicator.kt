@@ -81,13 +81,13 @@ fun InkletCircularProgressIndicator(
 ) = InkletProgressIndicator(null, modifier, color, trackColor, seed, circular = true)
 
 @Composable
-private fun loadingPhase(): State<Float> {
+private fun loadingPhase(circular: Boolean): State<Float> {
     if (LocalInkletReduceMotion.current) return rememberUpdatedState(0f)
     val transition = rememberInfiniteTransition(label = "Inklet loading")
     return transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
+        animationSpec = infiniteRepeatable(tween(if (circular) 6000 else 1800, easing = LinearEasing)),
         label = "Loading phase",
     )
 }
@@ -105,7 +105,7 @@ private fun InkletProgressIndicator(
 ) {
     val style = LocalInkletStyle.current
     val frame = LocalSketchFrame.current
-    val phase = if (progress == null) loadingPhase() else rememberUpdatedState(0f)
+    val phase = if (progress == null) loadingPhase(circular) else rememberUpdatedState(0f)
     val mountSeed = remember(seed) { seed ?: Random.nextInt() }
     Box(
         modifier
@@ -161,13 +161,17 @@ private fun InkletProgressIndicator(
                     val start =
                         when {
                             fraction != null -> 0f
-                            circular -> time
+
+                            // Three turns per growth cycle keep both arc ends moving clockwise.
+                            // Modulo also handles the endpoint when system animations are disabled.
+                            circular -> (time * 3f) % 1f
+
                             else -> ((time + 0.5f) % 1f) * 1.4f - 0.4f
                         }
                     val end =
                         when {
                             fraction != null -> fraction
-                            circular -> start + 0.15f + 0.5f * ((1 - cos(time * 2 * PI)) / 2).toFloat()
+                            circular -> start + 0.1f + 0.77f * ((1 - cos(time * 2 * PI)) / 2).toFloat()
                             else -> start + 0.4f
                         }
 
@@ -181,11 +185,17 @@ private fun InkletProgressIndicator(
                                 segment.reset()
                                 val from = start.coerceIn(0f, 1f)
                                 val to = end.coerceIn(0f, 1f)
-                                if (to > from) measure.getSegment(from * measure.length, to * measure.length, segment)
-                                if (circular && end > 1f) {
-                                    measure.getSegment(0f, (end - 1f) * measure.length, segment, startWithMoveTo = false)
+                                if (to > from) {
+                                    measure.getSegment(from * measure.length, to * measure.length, segment)
+                                    drawPath(segment, color, style = pen)
                                 }
-                                drawPath(segment, color, style = pen)
+                                if (circular && end > 1f) {
+                                    // Extract and draw each side of the seam separately. Some path
+                                    // backends replace the destination instead of appending to it.
+                                    segment.reset()
+                                    measure.getSegment(0f, (end - 1f) * measure.length, segment, startWithMoveTo = true)
+                                    drawPath(segment, color, style = pen)
+                                }
                             }
                         }
                     }

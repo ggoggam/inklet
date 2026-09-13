@@ -61,7 +61,7 @@ fun Gallery(
     var dark by remember { mutableStateOf(initialDark) }
     SideEffect { onDarkChanged(dark) }
     var motion by remember { mutableStateOf(!static) }
-    var roughness by remember { mutableFloatStateOf(1f) }
+    var roughness by remember { mutableFloatStateOf(InkletStyle().roughness.toFloat()) }
     var boil by remember { mutableFloatStateOf(0.3f) }
     val colors =
         if (dark) {
@@ -340,7 +340,7 @@ private fun PenTray(
             }
             InkletButton(
                 {
-                    setRoughness(1f)
+                    setRoughness(InkletStyle().roughness.toFloat())
                     setBoil(0.3f)
                 },
                 variant = InkletVariant.Outline,

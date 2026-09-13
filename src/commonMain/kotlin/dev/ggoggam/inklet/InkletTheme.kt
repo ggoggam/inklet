@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
  */
 @Immutable
 data class InkletStyle(
-    val roughness: Double = 1.0,
+    val roughness: Double = 0.3,
     val boil: Double = 0.3,
     val strokeWidth: Dp = 1.2.dp,
     val animate: Boolean = true,
