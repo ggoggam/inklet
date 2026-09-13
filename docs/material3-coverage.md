@@ -29,6 +29,11 @@ justify the extra publishing and versioning cost:
    containers; Foundation interaction primitives only where no drawing slot exists.
    Expose native state, colors, interaction sources and content slots as adapters mature.
 
+Geometry and Compose drawing live in `dev.ggoggam.inklet`, with explicit colors
+on the core modifiers and no Material imports. Components and theme-default
+modifier wrappers live under `dev.ggoggam.inklet.material3` in a matching nested
+directory. Choose the modifier import according to the design system in use.
+
 The current artifact includes all three and depends on Material 3. A future split
 could offer `inklet-core`, `inklet-compose` and `inklet-material3`, with the existing
 artifact kept as a compatibility facade. Avoid copying Material internals or
@@ -62,6 +67,8 @@ For example, a host can decorate a Material `Surface` while keeping its content 
 behavior. The rough fill is drawn behind the native component and the outline over it:
 
 ```kotlin
+import dev.ggoggam.inklet.material3.inkletSurface
+
 Surface(
     modifier = Modifier.inkletSurface(
         containerColor = MaterialTheme.colorScheme.surface,

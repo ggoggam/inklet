@@ -1,4 +1,4 @@
-package dev.ggoggam.inklet
+package dev.ggoggam.inklet.material3
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
@@ -27,6 +27,14 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import dev.ggoggam.inklet.InkletStyle
+import dev.ggoggam.inklet.InkletTheme
+import dev.ggoggam.inklet.LocalInkletReduceMotion
+import dev.ggoggam.inklet.LocalInkletStyle
+import dev.ggoggam.inklet.LocalSketchFrame
+import dev.ggoggam.inklet.Rough
+import dev.ggoggam.inklet.RoughOptions
+import dev.ggoggam.inklet.toPenPath
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.random.Random

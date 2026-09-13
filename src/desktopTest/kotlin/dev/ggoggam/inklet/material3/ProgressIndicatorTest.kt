@@ -1,6 +1,6 @@
 @file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 
-package dev.ggoggam.inklet
+package dev.ggoggam.inklet.material3
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
@@ -26,6 +26,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import dev.ggoggam.inklet.InkletStyle
+import dev.ggoggam.inklet.InkletTheme
 import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
 import kotlin.coroutines.CoroutineContext

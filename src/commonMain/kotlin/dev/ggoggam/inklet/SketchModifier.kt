@@ -1,6 +1,5 @@
 package dev.ggoggam.inklet
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -53,7 +52,7 @@ internal enum class PenShape { Rectangle, Ellipse, Line, Check, Dot }
 /** Draw over existing native controls without replacing their input, focus, or semantics. */
 @Composable
 fun Modifier.inkletBorder(
-    color: Color = MaterialTheme.colorScheme.outline,
+    color: Color,
     cornerRadius: Dp = 12.dp,
     seed: Int? = null,
 ): Modifier = sketch(PenShape.Rectangle, color, cornerRadius = cornerRadius, seed = seed)
@@ -64,8 +63,8 @@ fun Modifier.inkletBorder(
  */
 @Composable
 fun Modifier.inkletSurface(
-    containerColor: Color = MaterialTheme.colorScheme.surface,
-    ink: Color = MaterialTheme.colorScheme.outline,
+    containerColor: Color,
+    ink: Color,
     cornerRadius: Dp = 12.dp,
     scribble: Boolean = false,
     seed: Int? = null,
@@ -75,7 +74,7 @@ fun Modifier.inkletSurface(
 @Composable
 fun Modifier.inkletDecoration(
     decoration: InkletDecoration,
-    color: Color = MaterialTheme.colorScheme.primary,
+    color: Color,
     seed: Int? = null,
 ): Modifier =
     when (decoration) {

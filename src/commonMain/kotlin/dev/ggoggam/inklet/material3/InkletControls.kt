@@ -1,4 +1,4 @@
-package dev.ggoggam.inklet
+package dev.ggoggam.inklet.material3
 
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.HoverInteraction
@@ -39,6 +39,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.ggoggam.inklet.LocalInkletStyle
+import dev.ggoggam.inklet.PenShape
+import dev.ggoggam.inklet.sketch
 import kotlin.random.Random
 
 enum class InkletVariant { Outline, Solid, Scribble }

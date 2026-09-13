@@ -53,6 +53,9 @@ implementation("dev.ggoggam.inklet:inklet:0.1.0")
 Wrap the existing Material theme once:
 
 ```kotlin
+import dev.ggoggam.inklet.InkletTheme
+import dev.ggoggam.inklet.material3.InkletButton
+
 MaterialTheme {
     InkletTheme(reduceMotion = false) {
         InkletButton(onClick = ::save) { Text("Save our plan") }
@@ -63,6 +66,23 @@ MaterialTheme {
 The port inherits Material colors, content colors, and text styles. Give list items
 stable seeds (`seed = item.id.hashCode()`) so recycling a row reproduces its drawing.
 Without an explicit seed, a control keeps a random seed for its composition lifetime.
+
+Core APIs (`Rough`, `InkletTheme`, `InkletStyle`, `InkletDecoration`, and drawing
+modifiers) live in `dev.ggoggam.inklet` and do not import Material 3. Core modifiers
+require explicit colors so they can be used with any design system:
+
+```kotlin
+import dev.ggoggam.inklet.inkletBorder
+
+Modifier.inkletBorder(color = Color.Black)
+```
+
+Material components and modifier wrappers live in the nested
+`dev.ggoggam.inklet.material3` package. Import modifiers from that package to use
+Material theme defaults, such as `Modifier.inkletBorder()` with no color argument.
+Existing component imports should move to `dev.ggoggam.inklet.material3`; core
+theme and style imports stay the same. Both packages currently ship in the same
+Gradle module and artifact, which still includes the Material 3 dependency.
 
 ## Native API
 

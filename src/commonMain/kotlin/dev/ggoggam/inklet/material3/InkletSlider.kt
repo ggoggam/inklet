@@ -1,4 +1,4 @@
-package dev.ggoggam.inklet
+package dev.ggoggam.inklet.material3
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -17,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import dev.ggoggam.inklet.PenShape
+import dev.ggoggam.inklet.sketch
 
 /**
  * Continuous Material slider with pen-drawn track and thumb. Material owns dragging, keyboard

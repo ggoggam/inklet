@@ -35,22 +35,22 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.ggoggam.inklet.InkletBadge
-import dev.ggoggam.inklet.InkletButton
-import dev.ggoggam.inklet.InkletCard
-import dev.ggoggam.inklet.InkletCheckbox
-import dev.ggoggam.inklet.InkletCircularProgressIndicator
 import dev.ggoggam.inklet.InkletDecoration
-import dev.ggoggam.inklet.InkletDivider
-import dev.ggoggam.inklet.InkletLinearProgressIndicator
-import dev.ggoggam.inklet.InkletRadioButton
-import dev.ggoggam.inklet.InkletSlider
 import dev.ggoggam.inklet.InkletStyle
-import dev.ggoggam.inklet.InkletTextField
 import dev.ggoggam.inklet.InkletTheme
-import dev.ggoggam.inklet.InkletToggle
-import dev.ggoggam.inklet.InkletVariant
-import dev.ggoggam.inklet.inkletDecoration
+import dev.ggoggam.inklet.material3.InkletBadge
+import dev.ggoggam.inklet.material3.InkletButton
+import dev.ggoggam.inklet.material3.InkletCard
+import dev.ggoggam.inklet.material3.InkletCheckbox
+import dev.ggoggam.inklet.material3.InkletCircularProgressIndicator
+import dev.ggoggam.inklet.material3.InkletDivider
+import dev.ggoggam.inklet.material3.InkletLinearProgressIndicator
+import dev.ggoggam.inklet.material3.InkletRadioButton
+import dev.ggoggam.inklet.material3.InkletSlider
+import dev.ggoggam.inklet.material3.InkletTextField
+import dev.ggoggam.inklet.material3.InkletToggle
+import dev.ggoggam.inklet.material3.InkletVariant
+import dev.ggoggam.inklet.material3.inkletDecoration
 
 @Composable
 fun Gallery(
