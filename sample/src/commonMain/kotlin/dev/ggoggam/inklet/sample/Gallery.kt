@@ -39,8 +39,10 @@ import dev.ggoggam.inklet.InkletBadge
 import dev.ggoggam.inklet.InkletButton
 import dev.ggoggam.inklet.InkletCard
 import dev.ggoggam.inklet.InkletCheckbox
+import dev.ggoggam.inklet.InkletCircularProgressIndicator
 import dev.ggoggam.inklet.InkletDecoration
 import dev.ggoggam.inklet.InkletDivider
+import dev.ggoggam.inklet.InkletLinearProgressIndicator
 import dev.ggoggam.inklet.InkletRadioButton
 import dev.ggoggam.inklet.InkletSlider
 import dev.ggoggam.inklet.InkletStyle
@@ -216,6 +218,28 @@ private fun OurList(modifier: Modifier) {
                 }
             }
         }
+        val completed = wishes.count { it.done }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            InkletCircularProgressIndicator(
+                progress = { completed.toFloat() / wishes.size },
+                modifier = Modifier.semantics { contentDescription = "Wishes completed" },
+                trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                seed = 22,
+            )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "$completed of ${wishes.size} little adventures",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                InkletLinearProgressIndicator(
+                    progress = { completed.toFloat() / wishes.size },
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Someday list progress" },
+                    trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    seed = 23,
+                )
+            }
+        }
         InkletTextField(
             draft,
             { draft = it },
@@ -294,6 +318,21 @@ private fun PenTray(
                 }
             }
             InkletDivider(seed = 45)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                InkletCircularProgressIndicator(
+                    modifier = Modifier.semantics { contentDescription = "Loading preview" },
+                    trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    seed = 63,
+                )
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("A moment in the making", style = MaterialTheme.typography.labelLarge)
+                    InkletLinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Loading bar preview" },
+                        trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        seed = 64,
+                    )
+                }
+            }
             PenSetting("Roughness", "Smooth to loosely sketched", roughness, 0f..3f, setRoughness, seed = 60)
             PenSetting("Boil", "How much the ink moves", boil, 0f..1f, setBoil, seed = 61)
             if (!motion) {

@@ -9,7 +9,12 @@ This follows Compose's [custom design system guidance](https://developer.android
 extend Material's theme and wrap components while retaining their behavior where
 possible. The implemented slider uses the thumb and track slots in the pinned
 [Material 3 1.9.0 source](https://repo.maven.apache.org/maven2/org/jetbrains/compose/material3/material3/1.9.0/material3-1.9.0-sources.jar).
-An upgrade should review those contracts before extending coverage claims.
+An upgrade should review those contracts before extending coverage claims. Progress
+indicators do not expose track or arc drawing slots in that version; Inklet draws
+cached pen paths with Foundation-compatible progress semantics and a separate
+loading clock.
+`InkletTheme(reduceMotion = true)` freezes loading; pen `boil = 0` and
+`animate = false` leave loading active. See the [progress API](../README.md#progress-indicators).
 
 ## Structure
 
@@ -43,7 +48,7 @@ promising automatic restyling of arbitrary descendants.
 | Chips | Container modifier available | Assist/filter/input/suggestion adapters and selected/disabled treatments |
 | Navigation, tabs, app bars | No dedicated adapter | Selected indicators, containers, drawers, rails, bars and scroll behavior |
 | Menus, dialogs, sheets, tooltips, snackbars | No dedicated adapter | Decorate each popup/container while retaining native dismissal, focus and positioning |
-| Progress indicators | No dedicated adapter | Determinate and indeterminate paths; progress motion must be separate from pen boil |
+| Progress indicators | Linear/circular, determinate/indeterminate, progress semantics and RTL linear direction; loading clock independent of boil | Material track gaps, stop markers, exact loading choreography and expressive variants |
 | Search, date/time pickers, carousels and other composites | No dedicated adapter | Audit public slots; compose supported subcomponents or provide documented native fallbacks |
 | Text, icons and layout-only components | Use existing Compose content | Optional text decorations; no distortion of glyphs or layout |
 

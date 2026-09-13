@@ -38,6 +38,7 @@ data class InkletStyle(
 }
 
 val LocalInkletStyle = staticCompositionLocalOf { InkletStyle(animate = false) }
+internal val LocalInkletReduceMotion = staticCompositionLocalOf { false }
 internal val LocalSketchFrame =
     staticCompositionLocalOf<State<Int>> {
         object : State<Int> {
@@ -48,7 +49,9 @@ internal val LocalSketchFrame =
 /**
  * Wrap once around the app: every control shares one three-frame clock. Compose's animation
  * clock honors the platform motion-duration scale; [reduceMotion] also lets a host opt out.
- * No font or color scheme is imposed. Outside this provider controls render a static sketch.
+ * [reduceMotion] also freezes loading indicators at a visible indeterminate pose. Pen settings
+ * (including [InkletStyle.animate]) do not stop loading motion. No font or color scheme is
+ * imposed. Outside this provider controls render a static sketch, with loading motion enabled.
  */
 @Composable
 fun InkletTheme(
@@ -72,5 +75,10 @@ fun InkletTheme(
         } else {
             rememberUpdatedState(0)
         }
-    CompositionLocalProvider(LocalInkletStyle provides effective, LocalSketchFrame provides frame, content = content)
+    CompositionLocalProvider(
+        LocalInkletStyle provides effective,
+        LocalSketchFrame provides frame,
+        LocalInkletReduceMotion provides reduceMotion,
+        content = content,
+    )
 }

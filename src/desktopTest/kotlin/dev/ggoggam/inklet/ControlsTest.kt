@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -118,6 +119,8 @@ class ControlsTest {
             slider.config[SemanticsActions.SetProgress].action!!.invoke(2f)
             assertEquals(2f, value)
             assertEquals(1, finished)
+            // Deliver the externally invoked action's state write before reading updated semantics.
+            Snapshot.sendApplyNotifications()
             scene.render().close()
             assertEquals(2f, scene.node("roughness").config[SemanticsProperties.ProgressBarRangeInfo].current)
             val locked = scene.node("locked slider")

@@ -23,11 +23,13 @@ The gallery supports adding wishes, checking them off, selecting a radio option,
 saving a moment, changing between light and dark colors, and disabling motion.
 The pen tray has live roughness (0–3) and boil (0–1) sliders, numeric readouts,
 and a reset button. They update the entire gallery; enable motion to see boil.
+Linear and circular indicators show wish completion and indeterminate loading.
+Check wishes to change progress; loading keeps moving with boil set to zero.
 Sample data lives only in memory. To export a deterministic native rendering:
 
 ```sh
-./gradlew :sample:run --args='--snapshot /tmp/inklet.png 1120 1320'
-./gradlew :sample:run --args='--snapshot /tmp/inklet-dark.png 1120 1320 --dark'
+./gradlew :sample:run --args='--snapshot /tmp/inklet.png 1120 1400'
+./gradlew :sample:run --args='--snapshot /tmp/inklet-dark.png 1120 1400 --dark'
 ```
 
 Versions match Daytwo: Kotlin 2.4.0-RC, Compose 1.11.0, Material 3 1.9.0, AGP 9.2.1,
@@ -70,6 +72,7 @@ Without an explicit seed, a control keeps a random seed for its composition life
 | `InkletCheckbox`, `InkletRadioButton`, `InkletToggle` | Native selection semantics with at least 48dp touch targets |
 | `InkletTextField` | Native editable input; set `singleLine = false` for a textarea |
 | `InkletSlider` | Continuous Material slider with sketched thumb/track and native input behavior |
+| `InkletLinearProgressIndicator`, `InkletCircularProgressIndicator` | Determinate and indeterminate pen paths with progress semantics |
 | `Modifier.inkletBorder()` | Add a pen outline to existing controls, including custom editors |
 | `Modifier.inkletSurface()` | Sketch a filled container behind an existing component's content |
 | `Modifier.inkletDecoration()` | Underline, highlight, or circle around a label/block |
@@ -98,6 +101,35 @@ by replacing only Material's thumb and track slots.
 See the [coverage and public-library plan](docs/material3-coverage.md) for the
 supported APIs, remaining component families, extension example and release criteria.
 
+## Progress indicators
+
+Pass a progress lambda for a determinate indicator, or omit it for loading:
+
+```kotlin
+InkletLinearProgressIndicator(
+    progress = { completed.toFloat() / total.coerceAtLeast(1) },
+    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Upload progress" },
+)
+InkletCircularProgressIndicator(
+    modifier = Modifier.semantics { contentDescription = "Loading photos" },
+)
+```
+
+Both shapes support either mode, Material `color` and `trackColor` defaults, and a
+stable `seed`. They use `InkletStyle.strokeWidth` for the pen. Linear indicators
+default to 240 × 12dp, and circles to 40dp; size modifiers override those bounds.
+Linear progress follows the layout direction. Circular progress starts at the top
+and runs clockwise, staying circular within non-square bounds. Values are clamped
+to 0–1, with NaN treated as zero. Updates are immediate; animate the supplied value
+at the call site if desired. These indicators expose read-only progress semantics.
+
+Loading uses its own continuous Compose animation, independent of `boil` and
+`InkletStyle.animate`, including outside `InkletTheme`. `reduceMotion = true`
+freezes loading at a visible pose while preserving indeterminate semantics, and
+Compose's platform motion-duration scale is honored. Setting boil to zero only
+stops pen displacement. These are basic Inklet treatments: Material's track gaps,
+linear stop markers, and exact loading choreography are not reproduced.
+
 ## Rendering and motion
 
 `Rough.kt` adapts upstream `src/rough.ts` and `src/prng.ts`: Mulberry32, 8-unit
@@ -106,9 +138,9 @@ frames. Geometry uses dp and converts to pixels once when the draw cache is buil
 Small controls attenuate jitter to preserve their silhouettes. Checkmarks use a
 single perturbed gesture; radio dots use a softly irregular filled loop. Closed
 outlines are smoothed through their seam.
-Only the selected frame changes during drawing; geometry is not regenerated on
-each animation tick. The whole theme shares one clock, with three visible updates
-per 1200ms. Interactive controls re-sketch on press, focus, and pointer entry.
+Full pen paths are cached; geometry is not regenerated on each animation tick.
+Progress indicators trim those paths during drawing to reveal the active segment.
+All pen boil shares one theme clock, with three visible updates per 1200ms. Interactive controls re-sketch on press, focus, and pointer entry.
 
 Compose's animation duration scale controls the clock. `reduceMotion = true`
 explicitly removes animation and interaction re-sketching. A control outside a
@@ -192,7 +224,9 @@ instructions are in [CONTRIBUTING.md](CONTRIBUTING.md).
 Tests cover JavaScript PRNG golden vectors (including unsigned overflow), seeded
 reproduction, bounded boil frames, static motion, degenerate shapes, button and
 selection accessibility actions, disabled actions, native text editing, and 48dp
-checkbox bounds. Desktop scene tests render real Compose components through Skia.
+checkbox bounds. Progress tests check semantics, clamping, empty/full endpoints,
+RTL, clockwise arcs, custom bounds, and loading with zero boil and reduced motion.
+Desktop scene tests render real Compose components through Skia.
 
 ## Attribution
 

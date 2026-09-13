@@ -21,7 +21,7 @@ shell = "bash -c"
 run = '''
 set -euo pipefail
 
-# Match Basket: explicit choice, connected phone, running emulator, then a cold AVD.
+# explicit choice, connected phone, running emulator, then a cold AVD.
 devices="$(adb devices)"
 serial="${ANDROID_SERIAL:-}"
 if [ -n "$serial" ]; then
