@@ -98,6 +98,7 @@ Gradle module and artifact, which still includes the Material 3 dependency.
 | `InkletCheckbox`, `InkletRadioButton`, `InkletToggle` | Native selection semantics with at least 48dp touch targets |
 | `InkletTextField` | Native editable input; set `singleLine = false` for a textarea |
 | `InkletSlider` | Continuous Material slider with sketched thumb/track and native input behavior |
+| `InkletTabIndicator` | Reusable selection underline for native tab indicator slots |
 | `InkletLinearProgressIndicator`, `InkletCircularProgressIndicator` | Determinate and indeterminate pen paths with progress semantics |
 | `Modifier.inkletBorder()` | Add a pen outline to existing controls, including custom editors |
 | `Modifier.inkletSurface()` | Sketch a filled container behind an existing component's content |
@@ -170,6 +171,68 @@ including filled/tonal palettes from `IconButtonDefaults`. Both have a minimum
 content description on the button. Content glyphs are not sketched. These APIs
 also accept a nullable `interactionSource` and a stable `seed`, and share the
 theme's roughness, boil and reduced-motion behavior.
+
+## Tabs and selection indicators
+
+Use native Material tabs with `InkletTabIndicator` and `InkletDivider` in their
+drawing slots. The recipe works with `PrimaryTabRow`, `SecondaryTabRow`,
+`PrimaryScrollableTabRow` and `SecondaryScrollableTabRow` in Material 3 1.9.0.
+Material retains selection semantics, disabled behavior, focus, keyboard input,
+RTL layout and scrolling the selected tab into view.
+
+```kotlin
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
+import dev.ggoggam.inklet.material3.InkletDivider
+import dev.ggoggam.inklet.material3.InkletTabIndicator
+
+var selected by remember { mutableIntStateOf(0) }
+PrimaryTabRow(
+    selectedTabIndex = selected,
+    containerColor = Color.Transparent,
+    indicator = {
+        InkletTabIndicator(
+            Modifier.tabIndicatorOffset(selected, matchContentSize = true),
+            seed = 70,
+        )
+    },
+    divider = { InkletDivider(seed = 71) },
+) {
+    listOf("Our plans", "Memories", "Someday").forEachIndexed { index, label ->
+        Tab(
+            selected = selected == index,
+            onClick = { selected = index },
+            enabled = index != 2,
+            unselectedContentColor = if (index == 2)
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            else MaterialTheme.colorScheme.primary,
+            text = { Text(label) },
+        )
+    }
+}
+```
+
+For scrolling, replace `PrimaryTabRow` with `PrimaryScrollableTabRow`; its native
+`scrollState`, `edgePadding` and `minTabWidth` remain available. For secondary tabs,
+use either secondary row and `matchContentSize = false` for a full-tab underline.
+Keep the index valid for a nonempty tab list and hoist both the selection and the
+associated content. Text, icons and ripple remain native. Material's `Tab` does
+not dim disabled labels automatically in this version; the recipe supplies an
+explicit disabled label color through `unselectedContentColor`.
+Replacing both slots suppresses Material's original indicator and divider.
+
+The indicator uses the theme's primary color and pen width; the divider uses
+outline-variant. Both reserve 8dp vertically so their strokes share a baseline.
+For a large pen, give **both** `Modifier.height(20.dp)` (enough for the gallery's
+roughness 3 / boil 1 settings), keeping room below tab labels. Use a custom color
+for a disabled selected tab if desired; the drawing primitive has no tab state.
+It can also draw an underline in another selection host when given bounded width.
+
+`InkletTheme(reduceMotion = true)` freezes the pen. The supplied native
+`tabIndicatorOffset` still owns selection transitions, and the native scrollable
+row owns scroll motion; both follow the platform motion-duration scale. A host
+requiring immediate placement can supply its own positioning modifier. This is a
+slot recipe, not an Inklet tab-row adapter or Material indicator-shape parity.
 
 ## Progress indicators
 
@@ -298,6 +361,10 @@ checkbox bounds. Progress tests check semantics, clamping, empty/full endpoints,
 RTL, clockwise arcs, custom bounds, and loading with zero boil and reduced motion.
 Chip and icon-button tests check native actions, pointer clicks, selection, disabled
 callbacks, custom state colors, RTL slot order, focus drawing and reduced motion.
+Tab recipes are tested on all four current row variants for pointer and keyboard
+selection, focus, disabled tabs, indicator placement, content/full widths, RTL,
+scroll-to-selection and static pen drawing. Light/dark and RTL scene previews are
+written to `build/reports/tabs/` by `TabsTest` for visual review.
 Desktop scene tests render real Compose components through Skia.
 
 ## Attribution

@@ -100,8 +100,7 @@ class ControlsTest {
     @Test
     fun reducedMotionRendersTheSamePixelsAtDifferentFrameTimes() {
         withScene({ InkletCard(seed = 42) { Text("A static sketch") } }) { scene ->
-            fun pixels(time: Long) = scene.render(time).use { image -> image.encodeToData()!!.use { it.bytes } }
-            assertTrue(pixels(0).contentEquals(pixels(1_000_000_000)))
+            assertTrue(scene.pixels(0).contentEquals(scene.pixels(1_000_000_000)))
         }
     }
 
@@ -143,12 +142,11 @@ class ControlsTest {
                 }
             }
         }) { scene ->
-            fun pixels() = scene.render().use { image -> image.encodeToData()!!.use { it.bytes } }
-            val smooth = pixels()
+            val smooth = scene.pixels()
             style = style.copy(roughness = 3.0)
-            assertFalse(smooth.contentEquals(pixels()))
+            assertFalse(smooth.contentEquals(scene.pixels()))
             style = style.copy(roughness = 0.0)
-            assertTrue(smooth.contentEquals(pixels()))
+            assertTrue(smooth.contentEquals(scene.pixels()))
         }
     }
 
@@ -160,18 +158,24 @@ class ControlsTest {
                 InkletRadioButton(true, {}, seed = 42)
             }
         }) { scene ->
-            fun pixels(time: Long) = scene.render(time).use { image -> image.encodeToData()!!.use { it.bytes } }
-            val first = pixels(0)
+            val first = scene.pixels(0)
             // Feed frames as a window does, including the animation's initial effect frames.
             for (i in 1..9) scene.render(i * 50_000_000L).close()
-            assertFalse(first.contentEquals(pixels(500_000_000)))
+            assertFalse(first.contentEquals(scene.pixels(500_000_000)))
             reduceMotion = true
-            val still = pixels(600_000_000)
-            assertTrue(still.contentEquals(pixels(1_100_000_000)))
+            val still = scene.pixels(600_000_000)
+            assertTrue(still.contentEquals(scene.pixels(1_100_000_000)))
         }
     }
 
     private fun labelled(label: String) = Modifier.semantics { contentDescription = label }
+
+    private fun ImageComposeScene.pixels(time: Long = 0): ByteArray {
+        // Deliver test-owned state writes before rendering; the global notification coroutine
+        // can otherwise race the capture and leave pixels from the previous style or motion state.
+        Snapshot.sendApplyNotifications()
+        return render(time).use { image -> image.encodeToData()!!.use { it.bytes } }
+    }
 
     private fun ImageComposeScene.node(label: String): SemanticsNode {
         fun descendants(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::descendants)

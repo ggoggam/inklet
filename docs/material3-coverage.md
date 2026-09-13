@@ -51,7 +51,8 @@ promising automatic restyling of arbitrary descendants.
 | Text fields | String-based outlined input | Labels with outline gaps, supporting text, leading/trailing icons, transformations and state-based APIs |
 | Sliders | Continuous `InkletSlider` using Material slots | Discrete ticks, range and vertical variants |
 | Chips | `InkletAssistChip`, `InkletSuggestionChip`, `InkletFilterChip`, `InkletInputChip`; native slots, selected/disabled colors and interactions | Elevated variants and arbitrary shapes; selected checkmarks/removal actions remain caller content |
-| Navigation, tabs, app bars | No dedicated adapter | Selected indicators, containers, drawers, rails, bars and scroll behavior |
+| Tabs | `InkletTabIndicator` and `InkletDivider` slot recipes for native primary/secondary fixed and scrollable rows | Native labels, icons and ripple; no indicator-shape parity or tab-row adapter |
+| Navigation, app bars | No dedicated adapter | Selected indicators, containers, drawers, rails, bars and scroll behavior |
 | Menus, dialogs, sheets, tooltips, snackbars | No dedicated adapter | Decorate each popup/container while retaining native dismissal, focus and positioning |
 | Progress indicators | Linear/circular, determinate/indeterminate, progress semantics and RTL linear direction; loading clock independent of boil | Material track gaps, stop markers, exact loading choreography and expressive variants |
 | Search, date/time pickers, carousels and other composites | No dedicated adapter | Audit public slots; compose supported subcomponents or provide documented native fallbacks |
@@ -67,9 +68,92 @@ color fields private. Inklet's shared selectable palette uses surface-variant
 content and secondary-container selected colors; customize it with `copy`.
 See the [chip and icon-button API](../README.md#chips-and-icon-buttons).
 
+### Tab slot audit (Material 3 1.9.0)
+
+The pinned [Material sources](https://repo.maven.apache.org/maven2/org/jetbrains/compose/material3/material3/1.9.0/material3-1.9.0-sources.jar),
+`commonMain/androidx/compose/material3/TabRow.kt` and `Tab.kt`, expose these contracts:
+
+| Native API | Indicator and divider slots | Retained behavior |
+| --- | --- | --- |
+| `PrimaryTabRow`, `SecondaryTabRow` | `TabIndicatorScope.() -> Unit`, divider composable | Equal-width tab layout; `tabIndicatorOffset` tracks the selected tab, optionally matching content width |
+| `PrimaryScrollableTabRow`, `SecondaryScrollableTabRow` | Same slots; native `scrollState`, `edgePadding`, `minTabWidth` | Variable-width tabs, RTL scrolling and automatic scroll-to-selection |
+| Deprecated `TabRow`, `ScrollableTabRow` | Indicator receives `List<TabPosition>`; divider composable | Legacy positioning modifier; audited, but not the gallery recipe or tested coverage |
+| `Tab`, `LeadingIconTab` | Native text/icon or content slots, `enabled`, colors, interaction source | Selection role/state, disabled input, focus, keyboard activation and ripple |
+
+These current tab APIs are stable in the pinned source; the drawing primitive
+exposes no experimental upstream types. Both default drawing slots are replaced,
+so no native indicator or divider is drawn underneath. `InkletTabIndicator` and
+the existing `InkletDivider` share an 8dp drawing height. The gallery increases
+both heights with its live pen settings to leave room for roughness and boil.
+The host supplies valid selection and associated content, and can customize
+native tab colors and interactions. See the [copyable tab recipe](../README.md#tabs-and-selection-indicators).
+
+Reduced motion freezes Inklet drawing; native indicator transitions and scrolling
+retain platform motion-duration scale behavior. `reduceMotion` is not a global
+Material animation override. The pen indicator can also be used outside tabs with
+a bounded width and host-owned positioning and selection semantics.
+
 Inventory against the pinned Material version, including experimental APIs, before
 claiming complete coverage. Experimental families should remain opt-in and should
 not force unstable upstream types into otherwise stable public signatures.
+
+## Next work checklist
+
+Work through these priorities in order. A component whose only visual change is
+its outer border or fill can be covered by a documented modifier recipe without
+a dedicated Inklet composable. Record the supported treatment and its limits in
+the coverage table; a recipe does not imply parity with every Material variant.
+
+### 1. Tabs and a reusable pen indicator
+
+- [x] Audit fixed and scrollable tab APIs in the pinned Material version for
+  indicator and divider slots.
+- [x] Add a reusable sketched selection underline and divider, retaining Material
+  tab layout, selection semantics, focus, keyboard input and scrolling behavior.
+- [x] Demonstrate fixed and scrollable tabs in the gallery, with hoisted selection.
+- [x] Verify selection changes, disabled tabs, RTL, scrolling the selected tab into
+  view, dark mode and reduced motion with appropriate behavior tests and visual review.
+
+Validated with desktop Compose scene tests for all four current row variants,
+including keyboard focus/activation, pointer selection, content/full-tab indicator
+placement and scroll-to-selection in LTR/RTL with normal and disabled platform
+animations. Light/dark LTR/RTL previews include the maximum gallery roughness;
+review images are generated in `build/reports/tabs/`. Android/iOS device visual
+review remains part of the public-release checklist below.
+
+### 2. Container recipes in the gallery
+
+- [ ] Audit cards, surfaces, app bars, menus, dialogs, sheets, tooltips and snackbars
+  for treatments that only need an outer border or fill.
+- [ ] Add gallery examples and copyable recipes using `inkletBorder` or
+  `inkletSurface` wherever public APIs allow the intended treatment.
+- [ ] Document native border suppression, container colors in every supported
+  state, elevation, clipping order and padding needed to keep the pen visible.
+- [ ] Apply popup decoration to the popup's own container and retain native
+  dismissal, focus and positioning; record cases that need a dedicated adapter.
+- [ ] Check representative recipes in light/dark themes and relevant interaction
+  states, and update the coverage table to distinguish recipes from adapters.
+
+### 3. Richer text fields
+
+- [ ] Audit public text-field decoration/container APIs in the pinned version.
+- [ ] Add floating labels with sketched outline gaps, leading/trailing icons,
+  supporting text and error styling while retaining native editing behavior.
+- [ ] Add gallery cases and verify focus, editing, disabled/read-only/error states,
+  label transitions, RTL, large text and reduced motion.
+- [ ] Document supported overloads and remaining transformation/state-based API gaps.
+
+### Implementation checklist for each family
+
+- [ ] If only the outer border or fill changes, use a native component with an
+  Inklet modifier and document a recipe.
+- [ ] Add a small convenience adapter when repeated state, color or interaction
+  wiring makes the recipe cumbersome.
+- [ ] Use component-specific drawing for internal indicators, tracks, checkmarks
+  and outline gaps, preferring public drawing/content slots.
+- [ ] Keep text, icons and layout-only components as existing Compose content.
+- [ ] Verify the intended treatment against the pinned API: modifiers add drawing;
+  they do not suppress native borders or automatically restyle descendants.
 
 ## Extend an existing container
 

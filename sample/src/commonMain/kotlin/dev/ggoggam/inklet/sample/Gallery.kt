@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -18,7 +19,10 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -43,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import dev.ggoggam.inklet.InkletDecoration
 import dev.ggoggam.inklet.InkletStyle
 import dev.ggoggam.inklet.InkletTheme
+import dev.ggoggam.inklet.LocalInkletStyle
 import dev.ggoggam.inklet.material3.InkletAssistChip
 import dev.ggoggam.inklet.material3.InkletBadge
 import dev.ggoggam.inklet.material3.InkletButton
@@ -58,6 +63,7 @@ import dev.ggoggam.inklet.material3.InkletLinearProgressIndicator
 import dev.ggoggam.inklet.material3.InkletRadioButton
 import dev.ggoggam.inklet.material3.InkletSlider
 import dev.ggoggam.inklet.material3.InkletSuggestionChip
+import dev.ggoggam.inklet.material3.InkletTabIndicator
 import dev.ggoggam.inklet.material3.InkletTextField
 import dev.ggoggam.inklet.material3.InkletToggle
 import dev.ggoggam.inklet.material3.InkletVariant
@@ -80,6 +86,8 @@ fun Gallery(
     var motion by remember { mutableStateOf(!static) }
     var roughness by remember { mutableFloatStateOf(InkletStyle().roughness.toFloat()) }
     var boil by remember { mutableFloatStateOf(0.3f) }
+    var notebook by remember { mutableIntStateOf(0) }
+    var chapter by remember { mutableIntStateOf(0) }
     val colors =
         if (dark) {
             darkColorScheme(
@@ -133,6 +141,7 @@ fun Gallery(
                     Text("Our plans. Our someday list. The small things worth keeping.", color = colors.onSurfaceVariant)
                 }
                 InkletDivider(seed = 3)
+                NotebookTabs(notebook, { notebook = it }, chapter, { chapter = it })
                 BoxWithConstraints {
                     if (maxWidth < 740.dp) {
                         Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -175,6 +184,73 @@ fun Gallery(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun NotebookTabs(
+    notebook: Int,
+    onNotebookChange: (Int) -> Unit,
+    chapter: Int,
+    onChapterChange: (Int) -> Unit,
+) {
+    val pen = LocalInkletStyle.current
+    val lineHeight = maxOf(8.0, 2 * (2.1 * pen.roughness + pen.boil) + pen.strokeWidth.value + 2).dp
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        PrimaryTabRow(
+            selectedTabIndex = notebook,
+            containerColor = Color.Transparent,
+            indicator = {
+                InkletTabIndicator(Modifier.tabIndicatorOffset(notebook, matchContentSize = true).height(lineHeight), seed = 70)
+            },
+            divider = { InkletDivider(Modifier.height(lineHeight), seed = 71) },
+        ) {
+            listOf("Our plans", "Memories", "Someday").forEachIndexed { index, label ->
+                Tab(
+                    selected = notebook == index,
+                    onClick = { onNotebookChange(index) },
+                    enabled = index != 2,
+                    unselectedContentColor =
+                        if (index ==
+                            2
+                        ) {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                    text = { Text(label) },
+                )
+            }
+        }
+        val chapters =
+            listOf(
+                "Little adventures",
+                "Slow weekends",
+                "At our table",
+                "Far from home",
+                "Rainy days",
+                "Just because",
+                "With friends",
+                "Traditions",
+            )
+        SecondaryScrollableTabRow(
+            selectedTabIndex = chapter,
+            containerColor = Color.Transparent,
+            edgePadding = 0.dp,
+            minTabWidth = 144.dp,
+            indicator = {
+                InkletTabIndicator(Modifier.tabIndicatorOffset(chapter, matchContentSize = false).height(lineHeight), seed = 72)
+            },
+            divider = { InkletDivider(Modifier.height(lineHeight), seed = 73) },
+        ) {
+            chapters.forEachIndexed { index, label ->
+                Tab(selected = chapter == index, onClick = { onChapterChange(index) }, text = { Text(label) })
+            }
+        }
+        Text(
+            if (notebook == 0) "${chapters[chapter]} — a few things to look forward to." else "${chapters[chapter]} — the moments we keep.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
