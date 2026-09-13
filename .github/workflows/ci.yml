@@ -39,4 +39,5 @@ jobs:
             build/reports/tests/
             sample/build/reports/tests/
             sample/build/reports/containers/
+            sample/build/reports/text-fields/
           if-no-files-found: ignore

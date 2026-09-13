@@ -96,7 +96,7 @@ Gradle module and artifact, which still includes the Material 3 dependency.
 | `InkletAssistChip`, `InkletSuggestionChip`, `InkletFilterChip`, `InkletInputChip` | Flat sketched chips with native content slots and selected/disabled treatments |
 | `InkletCard`, `InkletBadge`, `InkletDivider` | Sketched surfaces and labels |
 | `InkletCheckbox`, `InkletRadioButton`, `InkletToggle` | Native selection semantics with at least 48dp touch targets |
-| `InkletTextField` | Native editable input; set `singleLine = false` for a textarea |
+| `InkletTextField` | String input with floating labels, outline gaps, icons, supporting/error text and visual transformations |
 | `InkletSlider` | Continuous Material slider with sketched thumb/track and native input behavior |
 | `InkletTabIndicator` | Reusable selection underline for native tab indicator slots |
 | `InkletLinearProgressIndicator`, `InkletCircularProgressIndicator` | Determinate and indeterminate pen paths with progress semantics |
@@ -172,6 +172,52 @@ including filled/tonal palettes from `IconButtonDefaults`. Both have a minimum
 content description on the button. Content glyphs are not sketched. These APIs
 also accept a nullable `interactionSource` and a stable `seed`, and share the
 theme's roughness, boil and reduced-motion behavior.
+
+## Text fields
+
+`InkletTextField` combines Foundation editing with Material's public outlined
+decoration box. Material positions the floating label and clips its animated gap
+out of the pen container; supporting text stays below the outline.
+
+```kotlin
+var note by remember { mutableStateOf("") }
+val tooLong = note.length > 200
+InkletTextField(
+    value = note,
+    onValueChange = { note = it },
+    modifier = Modifier.fillMaxWidth(),
+    label = { Text("A note for us") },
+    placeholder = { Text("Something worth remembering") },
+    singleLine = false,
+    minLines = 3,
+    maxLines = 6,
+    isError = tooLong,
+    errorMessage = "Keep the note within 200 characters",
+    supportingText = { Text(if (tooLong) "Keep the note within 200 characters" else "${note.length} / 200") },
+    seed = 42,
+)
+```
+
+Slots include `label`, `placeholder`, `leadingIcon`, `trailingIcon`, `prefix`,
+`suffix` and `supportingText`. Icons remain native caller content; give actions
+accessible names and wire their enabled state. `readOnly` permits selection and
+copying; `enabled = false` disables editing and focus. Supply localized validation
+through `errorMessage` (default: “Invalid input”); supporting text alone does not
+set error semantics.
+
+Use `OutlinedTextFieldDefaults.colors()` for text, cursor, selection, slot,
+container and outline colors in every state. Its border/indicator colors become
+the pen colors, so keep them visible. There is no native border underneath.
+`textStyle` overrides the input typography, including an explicit text color.
+`cornerRadius`, `contentPadding` and a hoisted `interactionSource` are supported.
+
+The String overload retains `singleLine = true` and the original positional
+parameters. `visualTransformation`, `keyboardOptions` and `keyboardActions` are
+forwarded to native editing. `TextFieldValue`/`TextFieldState` overloads,
+`InputTransformation`, `OutputTransformation`, secure text fields and arbitrary
+shapes remain future work. Inklet reduced motion freezes the pen; floating labels
+retain Material transitions governed by the platform motion scale.
+See the [pinned API audit and validation notes](docs/text-fields.md).
 
 ## Container recipes
 
@@ -376,6 +422,10 @@ Tab recipes are tested on all four current row variants for pointer and keyboard
 selection, focus, disabled tabs, indicator placement, content/full widths, RTL,
 scroll-to-selection and static pen drawing. Light/dark and RTL scene previews are
 written to `build/reports/tabs/` by `TabsTest` for visual review.
+Text-field tests check editing, selection, focus, IME actions, disabled/read-only
+and error semantics, state colors, multiline limits, animated outline gaps, RTL,
+double text size and reduced motion. Gallery tests exercise clearing and validation;
+light/dark, RTL and large-text previews are written to `sample/build/reports/text-fields/`.
 Desktop scene tests render real Compose components through Skia.
 
 ## Attribution

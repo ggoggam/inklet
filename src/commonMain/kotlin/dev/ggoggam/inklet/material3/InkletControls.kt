@@ -23,8 +23,6 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -250,39 +248,4 @@ fun InkletDivider(
     seed: Int? = null,
 ) {
     Box(modifier.fillMaxWidth().height(8.dp).sketch(PenShape.Line, color, seed = seed))
-}
-
-/** Native editable field; multiline input is supported with singleLine = false. */
-@Composable
-fun InkletTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    isError: Boolean = false,
-    singleLine: Boolean = true,
-    placeholder: (@Composable () -> Unit)? = null,
-    seed: Int? = null,
-) {
-    val source = remember { MutableInteractionSource() }
-    val focused by source.collectIsFocusedAsState()
-    val ink = if (isError) MaterialTheme.colorScheme.error else controlInk(enabled, focused)
-    OutlinedTextField(
-        value,
-        onValueChange,
-        modifier.inkletBorder(ink, seed = interactionSeed(source, seed)),
-        enabled = enabled,
-        isError = isError,
-        singleLine = singleLine,
-        placeholder = placeholder,
-        interactionSource = source,
-        shape = RoundedCornerShape(12.dp),
-        colors =
-            OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color.Transparent,
-                unfocusedBorderColor = Color.Transparent,
-                disabledBorderColor = Color.Transparent,
-                errorBorderColor = Color.Transparent,
-            ),
-    )
 }

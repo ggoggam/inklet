@@ -176,6 +176,7 @@ fun Gallery(
                     }
                 }
                 LittleChoices()
+                TextFieldExamples()
                 ContainerRecipes()
                 Text(
                     "Made for our beautifully unfinished plans.",

@@ -48,7 +48,7 @@ promising automatic restyling of arbitrary descendants.
 | Buttons | `InkletButton`, `InkletIconButton`, `InkletIconToggleButton`, solid/outline/scribble | Named tonal/text/elevated variants, FABs, segmented and split buttons |
 | Cards, surfaces, badges, dividers | Basic adapters; recipes for native clickable/disabled cards and selectable surfaces | Elevated/outlined variant validation, arbitrary shapes, badge host and vertical divider |
 | Checkbox, radio, switch | Boolean controls with Foundation semantics | Tri-state checkbox, nullable callbacks for labelled rows, native color/interaction configuration |
-| Text fields | String-based outlined input | Labels with outline gaps, supporting text, leading/trailing icons, transformations and state-based APIs |
+| Text fields | String outlined input with native floating-label gaps, icons, prefix/suffix, supporting/error text, read-only state, colors and visual transformations | `TextFieldValue`/state-based APIs, input/output transformations, secure/filled fields, alternate label positions and arbitrary shapes |
 | Sliders | Continuous `InkletSlider` using Material slots | Discrete ticks, range and vertical variants |
 | Chips | `InkletAssistChip`, `InkletSuggestionChip`, `InkletFilterChip`, `InkletInputChip`; native slots, selected/disabled colors and interactions | Elevated variants and arbitrary shapes; selected checkmarks/removal actions remain caller content |
 | Tabs | `InkletTabIndicator` and `InkletDivider` slot recipes for native primary/secondary fixed and scrollable rows | Native labels, icons and ripple; no indicator-shape parity or tab-row adapter |
@@ -144,14 +144,26 @@ animated transitions and Android/iOS device review remain release checks.
 
 ### 3. Richer text fields
 
-- [ ] Audit public text-field decoration/container APIs in the pinned version.
-- [ ] Add floating labels with sketched outline gaps, leading/trailing icons,
+- [x] Audit public text-field decoration/container APIs in the pinned version.
+- [x] Add floating labels with sketched outline gaps, leading/trailing icons,
   supporting text and error styling while retaining native editing behavior.
-- [ ] Add gallery cases and verify focus, editing, disabled/read-only/error states,
+- [x] Add gallery cases and verify focus, editing, disabled/read-only/error states,
   label transitions, RTL, large text and reduced motion.
-- [ ] Document supported overloads and remaining transformation/state-based API gaps.
+- [x] Document supported overloads and remaining transformation/state-based API gaps.
+
+See the [text-field API audit and validation notes](text-fields.md) and
+[copyable API example](../README.md#text-fields). Desktop scene tests cover native
+editing/focus, keyboard actions, selection, state colors, label gaps, supporting
+text bounds, LTR/RTL, double text size and motion settings. Gallery tests exercise
+clearing and error recovery; reviewed light/dark previews are generated in
+`sample/build/reports/text-fields/`. Android/iOS device review remains part of the
+public-release checklist.
 
 ### Implementation checklist for each family
+
+This is a reusable checklist, not a single project-wide completion gate. The
+[text-field review](text-fields.md#implementation-checklist-review) records the
+result and evidence for each item below.
 
 - [ ] If only the outer border or fill changes, use a native component with an
   Inklet modifier and document a recipe.
