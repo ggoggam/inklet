@@ -4,4 +4,5 @@
 local.properties
 .idea/
 .DS_Store
+**/xcuserdata/
 mise.local.toml

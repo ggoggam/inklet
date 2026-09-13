@@ -1,7 +1,7 @@
 # Contributing to Inklet
 
 Inklet is a standalone Kotlin Multiplatform build. It has its own Gradle wrapper,
-tool pins, desktop gallery, tests, and pre-commit configuration. No Daytwo source,
+tool pins, multiplatform sample gallery, tests, and pre-commit configuration. No Daytwo source,
 credentials, resources, or running services are needed.
 
 Use JDK 17 or newer and Android SDK API 36. Set `ANDROID_HOME` or create an ignored
@@ -15,12 +15,24 @@ mise exec -- prek install
 mise run kt:fmt
 mise run pre-commit
 mise run test
-mise run demo
+mise run android:compile
+mise run dev:android
+mise run ios:compile
+mise run dev:ios
+mise run sample
 ```
 
 Tests exercise deterministic geometry and actual Compose scenes, including input,
 selection, accessibility semantics, and disabled controls. Add coverage for changes
-to those behaviors. Run `mise run ios:check` on macOS for platform compatibility.
+to those behaviors. `dev:android` builds, installs, and launches the sample gallery,
+preferring a connected phone over an emulator and starting an AVD if needed.
+Override the choice with `ANDROID_SERIAL`. `dev:ios` builds and launches the same
+gallery on an iOS simulator on an Apple Silicon Mac. Override the simulator with
+`INKLET_SIM` (exact name or UDID). Both hosts live under `sample/`, alongside the
+shared gallery and desktop entry point, following Basket's app-host pattern.
+Use `android:compile` and `ios:compile` for library compilation without launching
+an app. Run tests separately with `mise run test`. See [README.md](README.md#development)
+for local tooling requirements.
 
 ## Moving to a public repository
 

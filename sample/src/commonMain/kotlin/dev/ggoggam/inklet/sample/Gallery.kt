@@ -1,6 +1,4 @@
-@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
-
-package dev.ggoggam.inklet.demo
+package dev.ggoggam.inklet.sample
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -17,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -24,7 +24,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
@@ -33,9 +32,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.application
-import androidx.compose.ui.window.rememberWindowState
 import dev.ggoggam.inklet.InkletBadge
 import dev.ggoggam.inklet.InkletButton
 import dev.ggoggam.inklet.InkletCard
@@ -48,46 +44,15 @@ import dev.ggoggam.inklet.InkletTheme
 import dev.ggoggam.inklet.InkletToggle
 import dev.ggoggam.inklet.InkletVariant
 import dev.ggoggam.inklet.inkletDecoration
-import java.io.File
-
-fun main(args: Array<String>) {
-    if (args.firstOrNull() == "--snapshot") {
-        val width = args.getOrNull(2)?.toInt() ?: 1120
-        val scene =
-            ImageComposeScene(width, args.getOrNull(3)?.toIntOrNull() ?: 1040) {
-                Gallery(
-                    static = true,
-                    initialDark =
-                        "--dark" in args,
-                )
-            }
-        try {
-            scene.render().close()
-            scene.render().use { image ->
-                image.encodeToData()!!.use { data -> File(args.getOrElse(1) { "inklet.png" }).writeBytes(data.bytes) }
-            }
-        } finally {
-            scene.close()
-        }
-    } else {
-        application {
-            Window(
-                onCloseRequest = ::exitApplication,
-                title = "Inklet · a little less perfect",
-                state = rememberWindowState(width = 1120.dp, height = 960.dp),
-            ) {
-                Gallery()
-            }
-        }
-    }
-}
 
 @Composable
-private fun Gallery(
+fun Gallery(
     static: Boolean = false,
     initialDark: Boolean = false,
+    onDarkChanged: (Boolean) -> Unit = {},
 ) {
     var dark by remember { mutableStateOf(initialDark) }
+    SideEffect { onDarkChanged(dark) }
     var motion by remember { mutableStateOf(!static) }
     val colors =
         if (dark) {
@@ -118,8 +83,9 @@ private fun Gallery(
                 Modifier
                     .fillMaxSize()
                     .background(colors.background)
+                    .safeDrawingPadding()
                     .verticalScroll(rememberScrollState())
-                    .padding(32.dp),
+                    .padding(horizontal = 20.dp, vertical = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 Row(

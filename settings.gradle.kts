@@ -14,4 +14,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "inklet"
-include(":demo")
+include(":sample", ":sample:androidApp")

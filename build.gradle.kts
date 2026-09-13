@@ -3,6 +3,7 @@ plugins {
     id("com.android.kotlin.multiplatform.library") version "9.2.1"
     id("org.jetbrains.compose") version "1.11.0"
     id("org.jetbrains.kotlin.plugin.compose") version "2.4.0-RC"
+    id("com.android.application") version "9.2.1" apply false
     `maven-publish`
 }
 

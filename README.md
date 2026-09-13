@@ -9,13 +9,13 @@ or downloaded font is needed at runtime.
 
 ## Run
 
-This is an independent Gradle project with its own wrapper and a desktop gallery.
+This is an independent Gradle project with its own wrapper and a shared gallery under `sample/`.
 Use JDK 17 or newer and an installed Android SDK (API 36). Set `ANDROID_HOME` or create a
 local `local.properties` containing `sdk.dir=/path/to/android/sdk`.
 
 ```sh
 ./gradlew desktopTest
-./gradlew :demo:run
+./gradlew :sample:run
 ./gradlew compileKotlinIosSimulatorArm64  # macOS with Xcode
 ```
 
@@ -24,8 +24,8 @@ saving a moment, changing between light and dark colors, and disabling motion.
 Sample data lives only in memory. To export a deterministic native rendering:
 
 ```sh
-./gradlew :demo:run --args='--snapshot /tmp/inklet.png 1120 1040'
-./gradlew :demo:run --args='--snapshot /tmp/inklet-dark.png 1120 1040 --dark'
+./gradlew :sample:run --args='--snapshot /tmp/inklet.png 1120 1040'
+./gradlew :sample:run --args='--snapshot /tmp/inklet-dark.png 1120 1040 --dark'
 ```
 
 Versions match Daytwo: Kotlin 2.4.0-RC, Compose 1.11.0, Material 3 1.9.0, AGP 9.2.1,
@@ -106,8 +106,37 @@ mise trust
 MISE_ENV=ci mise install  # includes the pinned JDK; local installs can use an existing JDK
 mise run pre-commit
 mise run test            # geometry + rendered-control tests and desktop gallery compilation
-mise run demo
-mise run ios:check       # macOS with Xcode; compiles both supported iOS targets
+mise run sample          # launch the desktop gallery
+mise run android:compile # compile the Android library without a device
+mise run dev:android     # build, install and launch the Android gallery
+mise run ios:compile     # macOS with Xcode; compile both supported iOS targets
+mise run dev:ios         # build, install and launch the iOS gallery on a simulator
+```
+
+The sample follows Basket's shared Compose UI and thin app-host structure:
+`sample/src/commonMain/` contains the gallery, `sample/androidApp/` hosts it on
+Android, and `sample/iosApp/` hosts it on iOS. Desktop windowing and snapshot export
+live in `sample/src/desktopMain/`.
+
+The `dev:*` tasks build, install, and launch the gallery using Basket's device
+preferences. Android uses a connected phone first, then a running emulator, and
+starts the first AVD if neither is present. Set `ANDROID_SERIAL` to select a
+specific connected, authorized device. Android launch needs `adb` and the `android`
+CLI on `PATH`; starting an emulator also needs an existing AVD.
+iOS reuses a booted iOS simulator, otherwise boots the first available iPhone and
+opens Simulator. Set `INKLET_SIM` to an exact simulator name or UDID; use a UDID
+when multiple runtimes have the same name. iOS launch needs an Apple Silicon Mac,
+Xcode, an installed iOS simulator runtime, and Python 3. The Xcode build phase
+builds the Kotlin framework before installing and launching the app. Physical
+iPhone deployment requires configuring signing in Xcode.
+
+The launch tasks do not run tests. `mise run test` runs the shared geometry and
+desktop rendered-control tests separately. `android:compile` and `ios:compile`
+check library compilation without launching a device.
+
+```sh
+ANDROID_SERIAL=emulator-5554 mise run dev:android
+INKLET_SIM="iPhone 17 Pro" mise run dev:ios
 ```
 
 `mise run kt:fmt` formats Kotlin; `mise run lint` checks without changing files.
