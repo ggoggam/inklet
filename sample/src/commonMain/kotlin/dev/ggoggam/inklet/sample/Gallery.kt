@@ -4,14 +4,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -38,19 +43,31 @@ import androidx.compose.ui.unit.sp
 import dev.ggoggam.inklet.InkletDecoration
 import dev.ggoggam.inklet.InkletStyle
 import dev.ggoggam.inklet.InkletTheme
+import dev.ggoggam.inklet.material3.InkletAssistChip
 import dev.ggoggam.inklet.material3.InkletBadge
 import dev.ggoggam.inklet.material3.InkletButton
 import dev.ggoggam.inklet.material3.InkletCard
 import dev.ggoggam.inklet.material3.InkletCheckbox
 import dev.ggoggam.inklet.material3.InkletCircularProgressIndicator
 import dev.ggoggam.inklet.material3.InkletDivider
+import dev.ggoggam.inklet.material3.InkletFilterChip
+import dev.ggoggam.inklet.material3.InkletIconButton
+import dev.ggoggam.inklet.material3.InkletIconToggleButton
+import dev.ggoggam.inklet.material3.InkletInputChip
 import dev.ggoggam.inklet.material3.InkletLinearProgressIndicator
 import dev.ggoggam.inklet.material3.InkletRadioButton
 import dev.ggoggam.inklet.material3.InkletSlider
+import dev.ggoggam.inklet.material3.InkletSuggestionChip
 import dev.ggoggam.inklet.material3.InkletTextField
 import dev.ggoggam.inklet.material3.InkletToggle
 import dev.ggoggam.inklet.material3.InkletVariant
 import dev.ggoggam.inklet.material3.inkletDecoration
+import dev.ggoggam.inklet.sample.icons.ArrowUpRight
+import dev.ggoggam.inklet.sample.icons.Check
+import dev.ggoggam.inklet.sample.icons.Heart
+import dev.ggoggam.inklet.sample.icons.Lucide
+import dev.ggoggam.inklet.sample.icons.Plus
+import dev.ggoggam.inklet.sample.icons.X
 
 @Composable
 fun Gallery(
@@ -149,6 +166,7 @@ fun Gallery(
                         }
                     }
                 }
+                LittleChoices()
                 Text(
                     "Made for our beautifully unfinished plans.",
                     color = colors.onSurfaceVariant,
@@ -256,7 +274,11 @@ private fun OurList(modifier: Modifier) {
             enabled = draft.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
             seed = 21,
-        ) { Text("+  Add to our list") }
+        ) {
+            Icon(Lucide.Plus, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Add to our list")
+        }
         InkletCard(Modifier.fillMaxWidth(), containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f), seed = 30) {
             Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 InkletBadge("a note for us", seed = 31)
@@ -293,7 +315,13 @@ private fun PenTray(
                 { saved = !saved },
                 Modifier.fillMaxWidth(),
                 seed = 41,
-            ) { Text(if (saved) "Saved for us ✓" else "Save a little moment") }
+            ) {
+                Text(if (saved) "Saved for us" else "Save a little moment")
+                if (saved) {
+                    Spacer(Modifier.width(8.dp))
+                    Icon(Lucide.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                }
+            }
             InkletButton({}, Modifier.fillMaxWidth(), variant = InkletVariant.Outline, seed = 42) { Text("Make a plan") }
             InkletButton(
                 {},
@@ -388,5 +416,84 @@ private fun PenSetting(
             colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
             seed = seed,
         )
+    }
+}
+
+@Composable
+private fun LittleChoices() {
+    var outdoors by remember { mutableStateOf(true) }
+    var together by remember { mutableStateOf(true) }
+    var favorite by remember { mutableStateOf(false) }
+    var suggestion by remember { mutableStateOf("Try a picnic") }
+    var message by remember { mutableStateOf("A few ways to make a plan our own.") }
+    InkletCard(Modifier.fillMaxWidth(), seed = 60) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Little choices", style = MaterialTheme.typography.titleLarge)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                InkletAssistChip(
+                    onClick = { message = "Saturday afternoon is saved for us." },
+                    label = { Text("Find a day") },
+                    leadingIcon = { Icon(Lucide.Plus, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    seed = 61,
+                )
+                InkletSuggestionChip(
+                    onClick = {
+                        message = "$suggestion — added to our ideas."
+                        suggestion = if (suggestion == "Try a picnic") "Visit a bookshop" else "Try a picnic"
+                    },
+                    label = { Text(suggestion) },
+                    seed = 62,
+                )
+                InkletFilterChip(
+                    selected = outdoors,
+                    onClick = { outdoors = !outdoors },
+                    label = { Text("Outdoors") },
+                    leadingIcon = {
+                        Icon(
+                            if (outdoors) Lucide.Check else Lucide.Plus,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    seed = 63,
+                )
+                if (together) {
+                    InkletInputChip(
+                        selected = true,
+                        onClick = { together = false },
+                        label = { Text("The two of us") },
+                        trailingIcon = { Icon(Lucide.X, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        modifier = Modifier.semantics { contentDescription = "Remove the two of us" },
+                        seed = 64,
+                    )
+                } else {
+                    InkletAssistChip(onClick = { together = true }, label = { Text("Add us back") }, seed = 64)
+                }
+                InkletFilterChip(selected = true, onClick = {}, label = { Text("Someday") }, enabled = false, seed = 65)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                InkletIconButton(
+                    onClick = { message = "One more little adventure." },
+                    modifier = Modifier.semantics { contentDescription = "Add an adventure" },
+                    variant = InkletVariant.Solid,
+                    seed = 66,
+                ) { Icon(Lucide.Plus, contentDescription = null) }
+                InkletIconToggleButton(
+                    checked = favorite,
+                    onCheckedChange = { favorite = it },
+                    modifier = Modifier.semantics { contentDescription = "Favorite this plan" },
+                    variant = InkletVariant.Scribble,
+                    seed = 67,
+                ) { Icon(Lucide.Heart, contentDescription = null) }
+                InkletIconButton(
+                    onClick = {},
+                    enabled = false,
+                    modifier = Modifier.semantics { contentDescription = "Share plan, unavailable" },
+                    seed = 68,
+                ) { Icon(Lucide.ArrowUpRight, contentDescription = null) }
+                Text(if (favorite) "A favourite plan" else "Keep it close", style = MaterialTheme.typography.labelLarge)
+            }
+            Text(message, style = MaterialTheme.typography.bodyMedium)
+        }
     }
 }

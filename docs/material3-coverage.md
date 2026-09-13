@@ -45,17 +45,27 @@ promising automatic restyling of arbitrary descendants.
 
 | Component family | Current support | Work required for full coverage |
 | --- | --- | --- |
-| Buttons | `InkletButton`, solid/outline/scribble | Named tonal/text/elevated variants, icon buttons, FABs, segmented and split buttons |
+| Buttons | `InkletButton`, `InkletIconButton`, `InkletIconToggleButton`, solid/outline/scribble | Named tonal/text/elevated variants, FABs, segmented and split buttons |
 | Cards, surfaces, badges, dividers | Basic containers and drawing modifiers | Native clickable/elevated variants, shapes, badge host and vertical divider |
 | Checkbox, radio, switch | Boolean controls with Foundation semantics | Tri-state checkbox, nullable callbacks for labelled rows, native color/interaction configuration |
 | Text fields | String-based outlined input | Labels with outline gaps, supporting text, leading/trailing icons, transformations and state-based APIs |
 | Sliders | Continuous `InkletSlider` using Material slots | Discrete ticks, range and vertical variants |
-| Chips | Container modifier available | Assist/filter/input/suggestion adapters and selected/disabled treatments |
+| Chips | `InkletAssistChip`, `InkletSuggestionChip`, `InkletFilterChip`, `InkletInputChip`; native slots, selected/disabled colors and interactions | Elevated variants and arbitrary shapes; selected checkmarks/removal actions remain caller content |
 | Navigation, tabs, app bars | No dedicated adapter | Selected indicators, containers, drawers, rails, bars and scroll behavior |
 | Menus, dialogs, sheets, tooltips, snackbars | No dedicated adapter | Decorate each popup/container while retaining native dismissal, focus and positioning |
 | Progress indicators | Linear/circular, determinate/indeterminate, progress semantics and RTL linear direction; loading clock independent of boil | Material track gaps, stop markers, exact loading choreography and expressive variants |
 | Search, date/time pickers, carousels and other composites | No dedicated adapter | Audit public slots; compose supported subcomponents or provide documented native fallbacks |
 | Text, icons and layout-only components | Use existing Compose content | Optional text decorations; no distortion of glyphs or layout |
+
+Chips and icon buttons use transparent native containers and no native borders or
+chip elevations. Their pen drawing covers a minimum 48dp layout (chips are taller
+than Material's compact 32dp visual). Corner radii apply to chips; icon buttons use
+a circular outline. Both accept hoisted interaction sources. Icon button glyphs,
+chip icons and avatars remain native content. Selectable chips use
+`InkletSelectableChipColors` because Material 3 1.9.0 keeps its selectable-chip
+color fields private. Inklet's shared selectable palette uses surface-variant
+content and secondary-container selected colors; customize it with `copy`.
+See the [chip and icon-button API](../README.md#chips-and-icon-buttons).
 
 Inventory against the pinned Material version, including experimental APIs, before
 claiming complete coverage. Experimental families should remain opt-in and should

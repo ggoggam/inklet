@@ -47,7 +47,7 @@ import kotlin.random.Random
 enum class InkletVariant { Outline, Solid, Scribble }
 
 @Composable
-private fun interactionSeed(
+internal fun interactionSeed(
     source: MutableInteractionSource,
     seed: Int?,
 ): Int {

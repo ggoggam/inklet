@@ -24,13 +24,16 @@ saving a moment, changing between light and dark colors, and disabling motion.
 The pen tray has live roughness (0–3) and boil (0–1) sliders, numeric readouts,
 and a reset button. Roughness defaults to 0.3. They update the entire gallery;
 enable motion to see boil.
+The “Little choices” panel demonstrates action and selectable chips, removable input,
+and icon buttons with a favorite toggle. The sample bundles five Lucide Compose
+vectors locally; Material `Icon` provides their theme tint.
 Linear and circular indicators show wish completion and indeterminate loading.
 Check wishes to change progress; loading keeps moving with boil set to zero.
 Sample data lives only in memory. To export a deterministic native rendering:
 
 ```sh
-./gradlew :sample:run --args='--snapshot /tmp/inklet.png 1120 1400'
-./gradlew :sample:run --args='--snapshot /tmp/inklet-dark.png 1120 1400 --dark'
+./gradlew :sample:run --args='--snapshot /tmp/inklet.png 1120 1700'
+./gradlew :sample:run --args='--snapshot /tmp/inklet-dark.png 1120 1700 --dark'
 ```
 
 Versions match Daytwo: Kotlin 2.4.0-RC, Compose 1.11.0, Material 3 1.9.0, AGP 9.2.1,
@@ -89,6 +92,8 @@ Gradle module and artifact, which still includes the Material 3 dependency.
 | API | Purpose |
 | --- | --- |
 | `InkletButton` | Solid, outline, and scribble variants; native button behavior |
+| `InkletIconButton`, `InkletIconToggleButton` | Circular solid/outline/scribble buttons with native actions and checked semantics |
+| `InkletAssistChip`, `InkletSuggestionChip`, `InkletFilterChip`, `InkletInputChip` | Flat sketched chips with native content slots and selected/disabled treatments |
 | `InkletCard`, `InkletBadge`, `InkletDivider` | Sketched surfaces and labels |
 | `InkletCheckbox`, `InkletRadioButton`, `InkletToggle` | Native selection semantics with at least 48dp touch targets |
 | `InkletTextField` | Native editable input; set `singleLine = false` for a textarea |
@@ -121,6 +126,50 @@ by replacing only Material's thumb and track slots.
 
 See the [coverage and public-library plan](docs/material3-coverage.md) for the
 supported APIs, remaining component families, extension example and release criteria.
+
+## Chips and icon buttons
+
+```kotlin
+var selected by remember { mutableStateOf(false) }
+InkletFilterChip(
+    selected = selected,
+    onClick = { selected = !selected },
+    label = { Text("Outdoors") },
+    colors = InkletChipDefaults.selectableChipColors().copy(
+        selectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+        selectedLabelColor = MaterialTheme.colorScheme.onTertiaryContainer,
+    ),
+    seed = 42,
+)
+InkletIconToggleButton(
+    checked = selected,
+    onCheckedChange = { selected = it },
+    modifier = Modifier.semantics { contentDescription = "Favorite this plan" },
+    variant = InkletVariant.Scribble,
+) { Text(if (selected) "♥" else "♡") }
+```
+
+Assist and suggestion chips take `onClick` and `label`; filter and input chips also
+require a hoisted `selected` value. Assist/filter/input chips accept leading and
+trailing icons, suggestion chips accept `icon`, and input chips also accept an
+`avatar`. Supply selected checkmarks and removal actions at the call site. A
+trailing icon alone does not create a separate removal action; for a removable
+input, wire the chip's `onClick` to remove it and label that action accessibly.
+
+Chips use an 8dp corner radius and a minimum 48dp height. They are flat adapters;
+Material retains typography, slot layout, ripple, keyboard/focus behavior, avatar
+clipping, and selection semantics. Assist/suggestion chips accept Material
+`ChipColors`. Filter/input chips use `InkletSelectableChipColors` and
+`InkletChipDefaults.selectableChipColors().copy(...)` to keep native content and
+sketched fill colors configurable in all states. Their shared Inklet palette uses
+`onSurfaceVariant` content and `secondaryContainer`/`onSecondaryContainer` selection.
+
+Icon buttons accept Material `IconButtonColors` or `IconToggleButtonColors`,
+including filled/tonal palettes from `IconButtonDefaults`. Both have a minimum
+48dp target and a circular pen outline. Pass a labelled icon (typically 24dp) or a
+content description on the button. Content glyphs are not sketched. These APIs
+also accept a nullable `interactionSource` and a stable `seed`, and share the
+theme's roughness, boil and reduced-motion behavior.
 
 ## Progress indicators
 
@@ -247,6 +296,8 @@ reproduction, bounded boil frames, static motion, degenerate shapes, button and
 selection accessibility actions, disabled actions, native text editing, and 48dp
 checkbox bounds. Progress tests check semantics, clamping, empty/full endpoints,
 RTL, clockwise arcs, custom bounds, and loading with zero boil and reduced motion.
+Chip and icon-button tests check native actions, pointer clicks, selection, disabled
+callbacks, custom state colors, RTL slot order, focus drawing and reduced motion.
 Desktop scene tests render real Compose components through Skia.
 
 ## Attribution
@@ -257,3 +308,10 @@ resources (`files/drawably-LICENSE.txt`). This is an independent native port, no
 official upstream package. Upstream sources reviewed on 2026-09-13:
 [rough.ts](https://github.com/Danilaa1/drawably/blob/main/src/rough.ts) and
 [prng.ts](https://github.com/Danilaa1/drawably/blob/main/src/prng.ts).
+
+The sample's five Lucide vectors come from
+[compose-icons](https://github.com/composablehorizons/compose-icons/tree/37d0e9fbe7f162c4b10df1eb302c983d30029454/icons-lucide-cmp).
+The upstream ISC and Feather MIT notices are included in the sample's
+[Lucide license resource](sample/src/commonMain/composeResources/files/lucide-LICENSE.txt).
+See the [vector provenance](sample/src/commonMain/kotlin/dev/ggoggam/inklet/sample/icons/README.md)
+for the pinned revision and local changes.
