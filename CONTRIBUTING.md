@@ -23,7 +23,8 @@ mise run sample
 ```
 
 Tests exercise deterministic geometry and actual Compose scenes, including input,
-selection, accessibility semantics, and disabled controls. Add coverage for changes
+selection, accessibility semantics, disabled controls, and the sample container
+recipes (including popup actions and dismissal). Add coverage for changes
 to those behaviors. `dev:android` builds, installs, and launches the sample gallery,
 preferring a connected phone over an emulator and starting an AVD if needed.
 Override the choice with `ANDROID_SERIAL`. `dev:ios` builds and launches the same

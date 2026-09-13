@@ -46,14 +46,14 @@ promising automatic restyling of arbitrary descendants.
 | Component family | Current support | Work required for full coverage |
 | --- | --- | --- |
 | Buttons | `InkletButton`, `InkletIconButton`, `InkletIconToggleButton`, solid/outline/scribble | Named tonal/text/elevated variants, FABs, segmented and split buttons |
-| Cards, surfaces, badges, dividers | Basic containers and drawing modifiers | Native clickable/elevated variants, shapes, badge host and vertical divider |
+| Cards, surfaces, badges, dividers | Basic adapters; recipes for native clickable/disabled cards and selectable surfaces | Elevated/outlined variant validation, arbitrary shapes, badge host and vertical divider |
 | Checkbox, radio, switch | Boolean controls with Foundation semantics | Tri-state checkbox, nullable callbacks for labelled rows, native color/interaction configuration |
 | Text fields | String-based outlined input | Labels with outline gaps, supporting text, leading/trailing icons, transformations and state-based APIs |
 | Sliders | Continuous `InkletSlider` using Material slots | Discrete ticks, range and vertical variants |
 | Chips | `InkletAssistChip`, `InkletSuggestionChip`, `InkletFilterChip`, `InkletInputChip`; native slots, selected/disabled colors and interactions | Elevated variants and arbitrary shapes; selected checkmarks/removal actions remain caller content |
 | Tabs | `InkletTabIndicator` and `InkletDivider` slot recipes for native primary/secondary fixed and scrollable rows | Native labels, icons and ripple; no indicator-shape parity or tab-row adapter |
-| Navigation, app bars | No dedicated adapter | Selected indicators, containers, drawers, rails, bars and scroll behavior |
-| Menus, dialogs, sheets, tooltips, snackbars | No dedicated adapter | Decorate each popup/container while retaining native dismissal, focus and positioning |
+| Navigation, app bars | Small top-app-bar container recipe; no navigation adapter | Other app-bar variants/collapse validation, selected navigation indicators, drawers, rails and bars |
+| Menus, dialogs, sheets, tooltips, snackbars | Native dropdown, alert dialog and caret-free plain-tooltip fill recipes; snackbar border recipe; inset modal-sheet panel | Whole-sheet drawing, tooltip carets, flat snackbar shadow removal and other popup variants need adapters or further slot work |
 | Progress indicators | Linear/circular, determinate/indeterminate, progress semantics and RTL linear direction; loading clock independent of boil | Material track gaps, stop markers, exact loading choreography and expressive variants |
 | Search, date/time pickers, carousels and other composites | No dedicated adapter | Audit public slots; compose supported subcomponents or provide documented native fallbacks |
 | Text, icons and layout-only components | Use existing Compose content | Optional text decorations; no distortion of glyphs or layout |
@@ -123,16 +123,24 @@ review remains part of the public-release checklist below.
 
 ### 2. Container recipes in the gallery
 
-- [ ] Audit cards, surfaces, app bars, menus, dialogs, sheets, tooltips and snackbars
+- [x] Audit cards, surfaces, app bars, menus, dialogs, sheets, tooltips and snackbars
   for treatments that only need an outer border or fill.
-- [ ] Add gallery examples and copyable recipes using `inkletBorder` or
+- [x] Add gallery examples and copyable recipes using `inkletBorder` or
   `inkletSurface` wherever public APIs allow the intended treatment.
-- [ ] Document native border suppression, container colors in every supported
+- [x] Document native border suppression, container colors in every supported
   state, elevation, clipping order and padding needed to keep the pen visible.
-- [ ] Apply popup decoration to the popup's own container and retain native
+- [x] Apply popup decoration to the popup's own container and retain native
   dismissal, focus and positioning; record cases that need a dedicated adapter.
-- [ ] Check representative recipes in light/dark themes and relevant interaction
+- [x] Check representative recipes in light/dark themes and relevant interaction
   states, and update the coverage table to distinguish recipes from adapters.
+
+See the [pinned container audit and copyable recipes](container-recipes.md).
+Desktop scene tests exercise the gallery functions, native actions, selected/disabled
+states, menu LTR/RTL positioning and popup dismissal. Light/dark maximum-pen
+previews are generated in `sample/build/reports/containers/`. Modal sheets retain
+their native shell and decorate an inset content panel: their outer modifier is
+outside the sliding offset. Whole-sheet coverage remains adapter work. Native
+animated transitions and Android/iOS device review remain release checks.
 
 ### 3. Richer text fields
 

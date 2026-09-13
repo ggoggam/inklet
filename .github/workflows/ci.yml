@@ -35,5 +35,8 @@ jobs:
         if: always()
         with:
           name: test-results
-          path: build/reports/tests/
+          path: |
+            build/reports/tests/
+            sample/build/reports/tests/
+            sample/build/reports/containers/
           if-no-files-found: ignore

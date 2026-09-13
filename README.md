@@ -107,8 +107,9 @@ Gradle module and artifact, which still includes the Material 3 dependency.
 | `Rough` | Lines, rounded rectangles, circles, ellipses, checkmarks, arrows, scribble fills, and boil variants |
 
 Label standalone selection controls with a content description or a labelled parent.
-Radio groups should use Compose's `selectableGroup()` on their parent. A card is a
-non-interactive container; add native `clickable` behavior when appropriate.
+Radio groups should use Compose's `selectableGroup()` on their parent. `InkletCard`
+is a non-interactive container; use the native clickable card
+[recipe](docs/container-recipes.md#cards-and-surfaces) when appropriate.
 
 This first native version covers the renderer and the controls used by Daytwo.
 It does not reproduce the DOM attach/destroy API, browser select styling, every
@@ -171,6 +172,16 @@ including filled/tonal palettes from `IconButtonDefaults`. Both have a minimum
 content description on the button. Content glyphs are not sketched. These APIs
 also accept a nullable `interactionSource` and a stable `seed`, and share the
 theme's roughness, boil and reduced-motion behavior.
+
+## Container recipes
+
+The gallery now includes native clickable/disabled cards, a selectable surface,
+a small app bar, dropdown menu, alert dialog, modal sheet with a pen content panel,
+plain tooltip and snackbar. Use the [copyable recipes and pinned slot audit](docs/container-recipes.md)
+to apply `inkletSurface` or `inkletBorder` while keeping native behavior. The guide
+covers colors in every supported state, border suppression, elevation, clipping
+and popup placement, with explicit limits for whole-sheet drawing and carets.
+These are sample recipes, not new library adapters.
 
 ## Tabs and selection indicators
 

@@ -22,6 +22,12 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":"))
         }
+        val desktopTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation("androidx.navigationevent:navigationevent:1.0.2")
+            }
+        }
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)

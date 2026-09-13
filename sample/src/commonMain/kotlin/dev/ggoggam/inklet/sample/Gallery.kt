@@ -176,6 +176,7 @@ fun Gallery(
                     }
                 }
                 LittleChoices()
+                ContainerRecipes()
                 Text(
                     "Made for our beautifully unfinished plans.",
                     color = colors.onSurfaceVariant,
