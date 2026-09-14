@@ -1,5 +1,8 @@
 package dev.ggoggam.inklet.material3
 
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.HoverInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
@@ -30,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +42,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.ggoggam.inklet.LocalInkletMotion
+import dev.ggoggam.inklet.LocalInkletReduceMotion
 import dev.ggoggam.inklet.LocalInkletStyle
 import dev.ggoggam.inklet.PenShape
 import dev.ggoggam.inklet.sketch
@@ -141,7 +148,11 @@ fun InkletBadge(
     )
 }
 
-/** Label this control at the call site, or merge it into a labelled toggleable row. */
+/**
+ * Draws the check when selected, unless reduced motion is enabled.
+ * [animationSpec] overrides the theme's check drawing animation; clearing the check is immediate.
+ * Label this control at the call site, or merge it into a labelled toggleable row.
+ */
 @Composable
 fun InkletCheckbox(
     checked: Boolean,
@@ -149,7 +160,15 @@ fun InkletCheckbox(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     seed: Int? = null,
+    animationSpec: FiniteAnimationSpec<Float> = LocalInkletMotion.current.checkbox,
 ) {
+    val reduceMotion = LocalInkletReduceMotion.current
+    val checkProgress =
+        animateFloatAsState(
+            targetValue = if (checked) 1f else 0f,
+            animationSpec = if (reduceMotion || !checked) snap() else animationSpec,
+            label = "Inklet check",
+        )
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val ink = controlInk(enabled, checked || focused)
@@ -166,7 +185,16 @@ fun InkletCheckbox(
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(28.dp).sketch(PenShape.Rectangle, ink, cornerRadius = 3.dp, seed = sketchSeed))
-        if (checked) Box(Modifier.size(20.dp, 18.dp).sketch(PenShape.Check, ink, seed = sketchSeed + 1))
+        if (checked) {
+            Box(
+                Modifier.size(20.dp, 18.dp).sketch(
+                    PenShape.Check,
+                    ink,
+                    seed = sketchSeed + 1,
+                    strokeProgress = { if (reduceMotion) 1f else checkProgress.value },
+                ),
+            )
+        }
     }
 }
 
@@ -198,6 +226,10 @@ fun InkletRadioButton(
     }
 }
 
+/**
+ * Slides the thumb and pencil-shades the checked track using [animationSpec].
+ * Defaults to the theme's toggle animation; reduced motion applies both immediately.
+ */
 @Composable
 fun InkletToggle(
     checked: Boolean,
@@ -205,7 +237,16 @@ fun InkletToggle(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     seed: Int? = null,
+    animationSpec: FiniteAnimationSpec<Float> = LocalInkletMotion.current.toggle,
 ) {
+    val target = if (checked) 1f else 0f
+    val animatedProgress by
+        if (LocalInkletReduceMotion.current) {
+            rememberUpdatedState(target)
+        } else {
+            animateFloatAsState(target, animationSpec = animationSpec, label = "Inklet toggle")
+        }
+    val progress = animatedProgress.coerceIn(0f, 1f)
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val ink = controlInk(enabled, checked || focused)
@@ -221,10 +262,20 @@ fun InkletToggle(
         ),
         contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.size(52.dp, 32.dp).sketch(PenShape.Rectangle, ink, cornerRadius = 16.dp, seed = sketchSeed)) {
+        Box(
+            Modifier.size(52.dp, 32.dp).sketch(
+                PenShape.Rectangle,
+                ink,
+                cornerRadius = 16.dp,
+                scribble = true,
+                seed = sketchSeed,
+                scribbleAlpha = progress,
+            ),
+        ) {
             Box(
                 Modifier
-                    .align(if (checked) Alignment.CenterEnd else Alignment.CenterStart)
+                    .align(Alignment.CenterStart)
+                    .offset(x = 20.dp * progress)
                     .padding(horizontal = 4.dp)
                     .size(24.dp)
                     .sketch(PenShape.Ellipse, ink, ink, seed = sketchSeed),

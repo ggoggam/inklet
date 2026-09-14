@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -106,6 +107,8 @@ internal fun Modifier.sketch(
     scribble: Boolean = false,
     seed: Int? = null,
     underline: Boolean = false,
+    scribbleAlpha: Float = 1f,
+    strokeProgress: (() -> Float)? = null,
 ): Modifier {
     val style = LocalInkletStyle.current
     val frame = LocalSketchFrame.current
@@ -143,6 +146,18 @@ internal fun Modifier.sketch(
                 }
             }
         val paths = frames.map { it.toPenPath(density) }
+        // Measure each pen pass separately, since PathMeasure reads one contour at a time.
+        val measures =
+            if (strokeProgress != null) {
+                frames.map { strokes ->
+                    strokes.map { stroke ->
+                        PathMeasure().apply { setPath(listOf(stroke).toPenPath(density), stroke.closed) }
+                    }
+                }
+            } else {
+                emptyList()
+            }
+        val segment = if (strokeProgress != null) Path() else null
         // Fill only the first closed pen pass, so overlapping outlines don't create fill seams.
         val fills = frames.map { it.take(1).toPenPath(density) }
         val scribbles =
@@ -159,10 +174,19 @@ internal fun Modifier.sketch(
             val index = frame.value % paths.size
             if (fill != Color.Transparent) drawPath(fills[index], fill)
             if (scribbles.isNotEmpty()) {
-                clipPath(fills[index]) { drawPath(scribbles[index], ink.copy(alpha = ink.alpha * 0.16f), style = pen) }
+                clipPath(fills[index]) { drawPath(scribbles[index], ink.copy(alpha = ink.alpha * 0.16f * scribbleAlpha), style = pen) }
             }
             drawContent()
-            drawPath(paths[index], ink, style = pen)
+            val progress = strokeProgress?.invoke()?.coerceIn(0f, 1f) ?: 1f
+            if (progress == 1f) {
+                drawPath(paths[index], ink, style = pen)
+            } else if (progress > 0f && segment != null) {
+                measures[index].forEach { measure ->
+                    segment.reset()
+                    measure.getSegment(0f, measure.length * progress, segment, startWithMoveTo = true)
+                    drawPath(segment, ink, style = pen)
+                }
+            }
         }
     }
 }
