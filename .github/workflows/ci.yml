@@ -33,6 +33,13 @@ jobs:
       - run: mise run pre-commit
       - run: mise run test
       - run: mise run android:compile
+      - run: mise run web:test
+      - run: mise run web:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-gallery
+          path: sample/build/dist/wasmJs/productionExecutable/
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:

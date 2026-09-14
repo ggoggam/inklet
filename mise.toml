@@ -16,6 +16,18 @@ run = "./gradlew --no-daemon desktopTest :sample:desktopTest :sample:desktopJar"
 description = "Run the interactive desktop gallery"
 run = "./gradlew :sample:run"
 
+[tasks."dev:web"]
+description = "Run the interactive Wasm gallery in a browser"
+run = "./gradlew :sample:wasmJsBrowserDevelopmentRun"
+
+[tasks."web:build"]
+description = "Build the Wasm gallery for static hosting"
+run = "./gradlew --no-daemon :sample:wasmJsBrowserDistribution"
+
+[tasks."web:test"]
+description = "Run shared geometry tests in headless Chrome (requires Chrome or CHROME_BIN)"
+run = "./gradlew --no-daemon :wasmJsBrowserTest"
+
 [tasks."android:compile"]
 description = "Compile the Android library without a device"
 run = "./gradlew --no-daemon compileAndroidMain"

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+
 plugins {
     kotlin("multiplatform") version "2.4.0-RC"
     id("com.android.kotlin.multiplatform.library") version "9.2.1"
@@ -20,6 +22,16 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
     jvm("desktop")
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser {
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                }
+            }
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {

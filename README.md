@@ -1,9 +1,9 @@
 # Inklet
 
 A native Kotlin / Compose Multiplatform port of the hand-drawn renderer from
-[Drawably](https://github.com/Danilaa1/drawably), for native apps. Targets Android,
-iOS arm64, the iOS arm64 simulator, and desktop JVM. No React, WebView, SVG parser,
-or downloaded font is needed at runtime.
+[Drawably](https://github.com/Danilaa1/drawably). Targets Android,
+iOS arm64, the iOS arm64 simulator, desktop JVM, and WebAssembly (Wasm/JS).
+The browser showcase renders the same Compose components on a canvas.
 
 ![Native Compose gallery](docs/preview-light.png)
 
@@ -16,14 +16,15 @@ local `local.properties` containing `sdk.dir=/path/to/android/sdk`.
 ```sh
 ./gradlew desktopTest
 ./gradlew :sample:run
+./gradlew :sample:wasmJsBrowserDevelopmentRun  # browser gallery
 ./gradlew compileKotlinIosSimulatorArm64  # macOS with Xcode
 ```
 
 The gallery supports adding wishes, checking them off, selecting a radio option,
 saving a moment, changing between light and dark colors, and disabling motion.
-The pen tray has live roughness (0–3) and boil (0–1) sliders, numeric readouts,
-and a reset button. Roughness defaults to 0.3. They update the entire gallery;
-enable motion to see boil.
+Live roughness (0–3) and boil (0–1) sliders sit directly below the gallery title,
+with numeric readouts, reset, motion, and theme controls visible before the examples.
+Roughness defaults to 0.3. They update the entire gallery; enable motion to see boil.
 The “Little choices” panel demonstrates action and selectable chips, removable input,
 and icon buttons with a favorite toggle. The sample bundles five Lucide Compose
 vectors locally; Material `Icon` provides their theme tint.
@@ -38,6 +39,31 @@ Sample data lives only in memory. To export a deterministic native rendering:
 
 Toolchain: Kotlin 2.4.0-RC, Compose 1.11.0, Material 3 1.9.0, AGP 9.2.1,
 Gradle 9.4.1.
+
+### Browser showcase
+
+Run `mise run dev:web` (or the Gradle command above) and open the local URL printed
+by the development server, usually `http://localhost:8080`. Use a modern browser
+with WasmGC support. The same shared gallery includes editable text, selection
+controls, popups, and live pen settings; sample data resets when the page reloads.
+
+Build a static site with:
+
+```sh
+mise run web:build
+# equivalent: ./gradlew :sample:wasmJsBrowserDistribution
+```
+
+Serve the entire `sample/build/dist/wasmJs/productionExecutable/` directory with
+an HTTP server or upload it to a static host such as GitHub Pages. Keep its JS,
+Wasm, and resources together; opening `index.html` directly from disk will not work.
+CI uploads the same directory as the `web-gallery` artifact. Building does not
+deploy the site. See Kotlin's [Wasm build and hosting guide](https://kotlinlang.org/docs/wasm-get-started.html).
+
+Gradle downloads Node.js and Yarn automatically. Commit the generated
+`kotlin-js-store/wasm/yarn.lock` when web dependencies change.
+`mise run web:test` runs shared geometry tests in headless Chrome; install Chrome
+or set `CHROME_BIN` to its executable.
 
 ## Use from another app
 
@@ -57,7 +83,7 @@ implementation("dev.ggoggam.inklet:inklet:0.1.0-LOCAL")
 
 After a release, use `mavenCentral()` and the released version of
 `dev.ggoggam.inklet:inklet` in place of the composite build. Gradle selects the
-Android, iOS or desktop artifact automatically. See [releasing](CONTRIBUTING.md#releasing)
+Android, iOS, desktop or Wasm artifact automatically. See [releasing](CONTRIBUTING.md#releasing)
 for the publication process.
 
 Wrap the existing Material theme once:
@@ -371,6 +397,9 @@ MISE_ENV=ci mise install  # includes the pinned JDK; local installs can use an e
 mise run pre-commit
 mise run test            # geometry + rendered-control tests and desktop gallery compilation
 mise run sample          # launch the desktop gallery
+mise run dev:web         # launch the browser gallery
+mise run web:build       # build the gallery for static hosting
+mise run web:test        # shared geometry tests in headless Chrome
 mise run android:compile # compile the Android library without a device
 mise run dev:android     # build, install and launch the Android gallery
 mise run ios:compile     # macOS with Xcode; compile both supported iOS targets
@@ -380,7 +409,8 @@ mise run dev:ios         # build, install and launch the iOS gallery on a simula
 The sample shares its Compose UI between thin platform hosts:
 `sample/src/commonMain/` contains the gallery, `sample/androidApp/` hosts it on
 Android, and `sample/iosApp/` hosts it on iOS. Desktop windowing and snapshot export
-live in `sample/src/desktopMain/`.
+live in `sample/src/desktopMain/`; the browser entry point and HTML/CSS live in
+`sample/src/wasmJsMain/`.
 
 The `dev:*` tasks build, install, and launch the gallery. Android uses a connected phone first, then a running emulator, and
 starts the first AVD if neither is present. Set `ANDROID_SERIAL` to select a
@@ -406,7 +436,8 @@ INKLET_SIM="iPhone 17 Pro" mise run dev:ios
 Install Git hooks with `mise exec -- prek install`.
 
 [CI](.github/workflows/ci.yml) runs pre-commit checks, desktop tests, sample
-compilation and Android library compilation. Releases reuse that workflow before
+compilation, Android library compilation, Wasm geometry tests, and a production
+browser gallery build. Releases reuse that workflow before
 publishing every library target from macOS. See [CONTRIBUTING.md](CONTRIBUTING.md)
 for local publication and Maven Central setup.
 

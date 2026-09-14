@@ -20,6 +20,9 @@ mise run dev:android
 mise run ios:compile
 mise run dev:ios
 mise run sample
+mise run dev:web
+mise run web:test
+mise run web:build
 ```
 
 Tests exercise deterministic geometry and actual Compose scenes, including input,
@@ -31,6 +34,12 @@ Override the choice with `ANDROID_SERIAL`. `dev:ios` builds and launches the sam
 gallery on an iOS simulator on an Apple Silicon Mac. Override the simulator with
 `INKLET_SIM` (exact name or UDID). Both hosts live under `sample/`, alongside the
 shared gallery and desktop entry point.
+`dev:web` serves the shared gallery in a browser. `web:test` runs shared geometry
+tests in headless Chrome (install Chrome or set `CHROME_BIN`); `web:build` generates
+the static site in `sample/build/dist/wasmJs/productionExecutable/`.
+Gradle manages Node.js and Yarn. Commit `kotlin-js-store/wasm/yarn.lock` when web
+dependencies change. CI tests the Wasm library and uploads the production site as
+the `web-gallery` artifact for preview or hosting.
 Use `android:compile` and `ios:compile` for library compilation without launching
 an app. Run tests separately with `mise run test`. See [README.md](README.md#development)
 for local tooling requirements.
@@ -40,8 +49,8 @@ for local tooling requirements.
 Publishing follows [Vitre](https://github.com/ggoggam/vitre): changing `VERSION_NAME`
 in [gradle.properties](gradle.properties) on `main` triggers
 [release.yml](.github/workflows/release.yml). It runs the full CI workflow, publishes
-all five publications (root metadata, Android, desktop, iOS arm64 and iOS simulator
-arm64) from macOS, then creates `v<version>` and a GitHub release. Prerelease
+all six publications (root metadata, Android, desktop, iOS arm64, iOS simulator
+arm64 and Wasm/JS) from macOS, then creates `v<version>` and a GitHub release. Prerelease
 versions produce prereleases on GitHub. Pushing a tag does not publish anything.
 Only the library is published; the gallery and platform hosts are samples.
 
