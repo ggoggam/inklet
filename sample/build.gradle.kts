@@ -32,6 +32,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":"))
+            implementation("org.jetbrains.compose.components:components-resources:1.11.0")
         }
         val desktopTest by getting {
             dependencies {

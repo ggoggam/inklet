@@ -479,3 +479,9 @@ The upstream ISC and Feather MIT notices are included in the sample's
 [Lucide license resource](sample/src/commonMain/composeResources/files/lucide-LICENSE.txt).
 See the [vector provenance](sample/src/commonMain/kotlin/dev/ggoggam/inklet/sample/icons/README.md)
 for the pinned revision and local changes.
+
+The Wasm sample bundles regular (400) and bold (700)
+[Lora from Google Fonts](https://fonts.google.com/specimen/Lora), loaded before
+the gallery is shown. Native samples use their system serif fonts. The font files
+come from Google Fonts CSS API version `v37`; the SIL Open Font License is included
+in the [font license resource](sample/src/wasmJsMain/composeResources/files/lora-OFL.txt).

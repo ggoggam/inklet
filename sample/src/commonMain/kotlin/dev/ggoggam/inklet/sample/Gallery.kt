@@ -40,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -127,7 +126,13 @@ fun Gallery(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text("Inklet", fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold, fontSize = 32.sp, color = colors.onSurface)
+                    Text(
+                        "Inklet",
+                        fontFamily = LocalGallerySerif.current,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 32.sp,
+                        color = colors.onSurface,
+                    )
                     InkletBadge("a shared little life", color = colors.primary, scribble = true, seed = 4)
                 }
                 PenSettings(
@@ -143,7 +148,7 @@ fun Gallery(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         "Good things,\none scribble at a time.",
-                        fontFamily = FontFamily.Serif,
+                        fontFamily = LocalGallerySerif.current,
                         fontSize = 38.sp,
                         lineHeight = 44.sp,
                         color = colors.onSurface,
@@ -171,7 +176,7 @@ fun Gallery(
                 Text(
                     "Made for our beautifully unfinished plans.",
                     color = colors.onSurfaceVariant,
-                    fontFamily = FontFamily.Serif,
+                    fontFamily = LocalGallerySerif.current,
                     fontSize = 17.sp,
                 )
             }
@@ -352,7 +357,7 @@ private fun OurList(modifier: Modifier) {
                 InkletBadge("a note for us", seed = 31)
                 Text(
                     "We don't have to do it all.\nJust a little, together.",
-                    fontFamily = FontFamily.Serif,
+                    fontFamily = LocalGallerySerif.current,
                     fontSize = 23.sp,
                     lineHeight = 30.sp,
                 )
@@ -421,7 +426,7 @@ private fun PenTray(modifier: Modifier) {
             }
             Text(
                 "Imperfect lines. Perfectly us.",
-                fontFamily = FontFamily.Serif,
+                fontFamily = LocalGallerySerif.current,
                 fontSize = 18.sp,
                 modifier = Modifier.inkletDecoration(InkletDecoration.Highlight, seed = 48).padding(6.dp),
             )
