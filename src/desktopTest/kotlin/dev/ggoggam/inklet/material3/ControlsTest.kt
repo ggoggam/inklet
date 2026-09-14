@@ -2,6 +2,9 @@
 
 package dev.ggoggam.inklet.material3
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,8 +25,10 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.AnnotatedString
+import dev.ggoggam.inklet.InkletMotion
 import dev.ggoggam.inklet.InkletStyle
 import dev.ggoggam.inklet.InkletTheme
+import org.jetbrains.skia.Bitmap
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -101,6 +106,97 @@ class ControlsTest {
     fun reducedMotionRendersTheSamePixelsAtDifferentFrameTimes() {
         withScene({ InkletCard(seed = 42) { Text("A static sketch") } }) { scene ->
             assertTrue(scene.pixels(0).contentEquals(scene.pixels(1_000_000_000)))
+        }
+    }
+
+    @Test
+    fun checkboxDrawsItsStrokeOnEachCheckAndReducedMotionShowsItImmediately() {
+        for (reduceMotion in listOf(false, true)) {
+            var checked by mutableStateOf(false)
+            withScene({
+                InkletTheme(InkletStyle(roughness = 0.0, boil = 0.0), reduceMotion = reduceMotion) {
+                    InkletCheckbox(checked, { checked = it }, labelled("check"), seed = 42)
+                }
+            }) { scene ->
+                var time = 0L
+
+                fun frame(): Int {
+                    time += 16_000_000
+                    Snapshot.sendApplyNotifications()
+                    return scene.render(time).use { image ->
+                        Bitmap.makeFromImage(image).use { bitmap ->
+                            // Count ink inside the box, excluding its outline.
+                            (14..33).sumOf { x -> (15..32).count { y -> bitmap.getColor(x, y) ushr 24 > 0 } }
+                        }
+                    }
+                }
+
+                assertEquals(0, frame())
+                repeat(2) {
+                    scene
+                        .node("check")
+                        .config[SemanticsActions.OnClick]
+                        .action!!
+                        .invoke()
+                    val first = frame()
+                    assertEquals(ToggleableState.On, scene.node("check").config[SemanticsProperties.ToggleableState])
+                    repeat(4) { frame() }
+                    val partial = frame()
+                    repeat(20) { frame() }
+                    val complete = frame()
+                    assertTrue(complete > 0)
+                    if (reduceMotion) {
+                        assertEquals(complete, first)
+                        assertEquals(complete, partial)
+                    } else {
+                        assertTrue(partial > 0 && partial < complete, "The check should grow through a partial stroke")
+                    }
+                    scene
+                        .node("check")
+                        .config[SemanticsActions.OnClick]
+                        .action!!
+                        .invoke()
+                    assertEquals(0, frame())
+                    repeat(2) { frame() }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun selectionMotionInheritsCustomSpecsAndHonorsOverridesAndReducedMotion() {
+        for (control in listOf("checkbox", "toggle")) {
+            for (mode in listOf("theme", "override", "reduced")) {
+                var checked by mutableStateOf(false)
+                val slow = tween<Float>(1000, easing = LinearEasing)
+                withScene({
+                    InkletTheme(motion = InkletMotion(checkbox = slow, toggle = slow)) {
+                        // Nested themes should inherit the parent's motion specs.
+                        InkletTheme(InkletStyle(boil = 0.0), reduceMotion = mode == "reduced") {
+                            if (control == "checkbox") {
+                                if (mode == "override") {
+                                    InkletCheckbox(checked, {}, seed = 42, animationSpec = snap())
+                                } else {
+                                    InkletCheckbox(checked, {}, seed = 42)
+                                }
+                            } else {
+                                if (mode == "override") {
+                                    InkletToggle(checked, {}, seed = 42, animationSpec = snap())
+                                } else {
+                                    InkletToggle(checked, {}, seed = 42)
+                                }
+                            }
+                        }
+                    }
+                }) { scene ->
+                    checked = true
+                    for (i in 1..20) scene.pixels(i * 16_000_000L)
+                    val early = scene.pixels(336_000_000)
+                    for (i in 22..80) scene.render(i * 16_000_000L).close()
+                    val complete = scene.pixels(1_300_000_000)
+                    assertEquals(mode != "theme", early.contentEquals(complete), "$control with $mode motion")
+                }
+            }
         }
     }
 

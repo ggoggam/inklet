@@ -372,7 +372,8 @@ All pen boil shares one theme clock, with three visible updates per 1200ms. Inte
 
 Compose's animation duration scale controls the clock. `reduceMotion = true`
 explicitly removes animation and interaction re-sketching. A control outside a
-`InkletTheme` renders statically. Keep the host's existing platform accessibility
+`InkletTheme` renders a static pen sketch, with selection and loading animations enabled.
+Keep the host's existing platform accessibility
 and lifecycle handling. Daytwo uses a gentler style (roughness 0.7, boil 0.2, 1dp ink)
 and keeps its existing Korean typography and light/dark palettes.
 
@@ -384,6 +385,28 @@ InkletTheme(
     // All Inklet drawing in this subtree shares these settings.
 }
 ```
+
+Checkboxes draw their check over 200ms; switches slide their thumb and fade pencil
+shading together over 180ms. Configure these transitions across a subtree with
+`InkletMotion`, or override one control's `animationSpec`:
+
+```kotlin
+InkletTheme(
+    motion = InkletMotion(
+        checkbox = tween(200, easing = LinearEasing),
+        toggle = tween(250, easing = FastOutSlowInEasing),
+    ),
+) {
+    InkletCheckbox(checked, onCheckedChange)
+    InkletToggle(enabled, onEnabledChange, animationSpec = snap())
+}
+```
+
+These are Compose `FiniteAnimationSpec<Float>` values, so `tween`, `spring`, and
+`snap` are supported. Nested themes inherit motion settings. Reduced motion takes
+precedence over theme settings and control overrides. An initially checked control
+renders complete, and unchecking a checkbox clears its mark immediately. Pen boil
+and loading indicators retain their independent animation settings.
 
 Roughness changes the base drawing; zero gives smooth geometry. Boil is independent
 frame-to-frame displacement, not animation speed; zero stops the idle boil.

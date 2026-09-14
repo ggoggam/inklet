@@ -1,5 +1,6 @@
 package dev.ggoggam.inklet
 
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -37,6 +38,18 @@ data class InkletStyle(
     }
 }
 
+/**
+ * Selection animation specs. Customize duration and easing with tween, use spring for a
+ * spring response, or snap to disable a transition. [toggle] drives both thumb and shading.
+ * Reduced motion takes precedence over these specs. Pen boil and loading are independent.
+ */
+@Immutable
+data class InkletMotion(
+    val checkbox: FiniteAnimationSpec<Float> = tween(200, easing = LinearEasing),
+    val toggle: FiniteAnimationSpec<Float> = tween(180),
+)
+
+val LocalInkletMotion = staticCompositionLocalOf { InkletMotion() }
 val LocalInkletStyle = staticCompositionLocalOf { InkletStyle(animate = false) }
 internal val LocalInkletReduceMotion = staticCompositionLocalOf { false }
 internal val LocalSketchFrame =
@@ -52,11 +65,13 @@ internal val LocalSketchFrame =
  * [reduceMotion] also freezes loading indicators at a visible indeterminate pose. Pen settings
  * (including [InkletStyle.animate]) do not stop loading motion. No font or color scheme is
  * imposed. Outside this provider controls render a static sketch, with loading motion enabled.
+ * [motion] configures selection transitions and is inherited by nested themes by default.
  */
 @Composable
 fun InkletTheme(
     style: InkletStyle = InkletStyle(),
     reduceMotion: Boolean = false,
+    motion: InkletMotion = LocalInkletMotion.current,
     content: @Composable () -> Unit,
 ) {
     val effective = if (reduceMotion) style.copy(animate = false) else style
@@ -77,6 +92,7 @@ fun InkletTheme(
         }
     CompositionLocalProvider(
         LocalInkletStyle provides effective,
+        LocalInkletMotion provides motion,
         LocalSketchFrame provides frame,
         LocalInkletReduceMotion provides reduceMotion,
         content = content,

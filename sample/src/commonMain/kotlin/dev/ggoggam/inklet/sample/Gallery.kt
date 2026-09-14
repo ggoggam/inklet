@@ -142,6 +142,7 @@ fun Gallery(
                     setBoil = { boil = it },
                     motion = motion,
                     setMotion = { motion = it },
+                    static = static,
                     dark = dark,
                     setDark = { dark = it },
                 )
@@ -442,6 +443,7 @@ private fun PenSettings(
     setBoil: (Float) -> Unit,
     motion: Boolean,
     setMotion: (Boolean) -> Unit,
+    static: Boolean,
     dark: Boolean,
     setDark: (Boolean) -> Unit,
 ) {
@@ -482,7 +484,10 @@ private fun PenSettings(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("A little motion")
-                    InkletToggle(motion, setMotion, Modifier.semantics { contentDescription = "A little motion" }, seed = 46)
+                    // Keep this setting's own feedback independent of the motion it controls.
+                    InkletTheme(style = LocalInkletStyle.current, reduceMotion = static) {
+                        InkletToggle(motion, setMotion, Modifier.semantics { contentDescription = "A little motion" }, seed = 46)
+                    }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Evening paper")
