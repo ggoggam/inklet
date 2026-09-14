@@ -2,7 +2,7 @@ name: GitHub Pages
 
 on:
   push:
-    branches: [main, codex/wasm-showcase] # Bootstrap the first deployment before the PR merges.
+    branches: [main]
   workflow_dispatch:
 
 permissions:
