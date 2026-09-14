@@ -40,6 +40,9 @@ the static site in `sample/build/dist/wasmJs/productionExecutable/`.
 Gradle manages Node.js and Yarn. Commit `kotlin-js-store/wasm/yarn.lock` when web
 dependencies change. CI tests the Wasm library and uploads the production site as
 the `web-gallery` artifact for preview or hosting.
+The [GitHub Pages workflow](.github/workflows/pages.yml) deploys the
+[public gallery](https://blog.ggoggam.dev/inklet/) on pushes to `main` or a manual
+workflow run. In repository Settings → Pages, the build source is **GitHub Actions**.
 Use `android:compile` and `ios:compile` for library compilation without launching
 an app. Run tests separately with `mise run test`. See [README.md](README.md#development)
 for local tooling requirements.

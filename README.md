@@ -5,6 +5,8 @@ A native Kotlin / Compose Multiplatform port of the hand-drawn renderer from
 iOS arm64, the iOS arm64 simulator, desktop JVM, and WebAssembly (Wasm/JS).
 The browser showcase renders the same Compose components on a canvas.
 
+[Try the live component gallery](https://blog.ggoggam.dev/inklet/)
+
 ![Native Compose gallery](docs/preview-light.png)
 
 ## Run
@@ -57,8 +59,11 @@ mise run web:build
 Serve the entire `sample/build/dist/wasmJs/productionExecutable/` directory with
 an HTTP server or upload it to a static host such as GitHub Pages. Keep its JS,
 Wasm, and resources together; opening `index.html` directly from disk will not work.
-CI uploads the same directory as the `web-gallery` artifact. Building does not
-deploy the site. See Kotlin's [Wasm build and hosting guide](https://kotlinlang.org/docs/wasm-get-started.html).
+CI uploads the same directory as the `web-gallery` artifact. The
+[GitHub Pages workflow](.github/workflows/pages.yml) publishes the
+[live gallery](https://blog.ggoggam.dev/inklet/) on pushes to `main`, and can also
+be run manually from GitHub Actions. Local builds do not deploy the site.
+See Kotlin's [Wasm build and hosting guide](https://kotlinlang.org/docs/wasm-get-started.html).
 
 Gradle downloads Node.js and Yarn automatically. Commit the generated
 `kotlin-js-store/wasm/yarn.lock` when web dependencies change.
