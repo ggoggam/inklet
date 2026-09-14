@@ -130,6 +130,16 @@ fun Gallery(
                     Text("Inklet", fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold, fontSize = 32.sp, color = colors.onSurface)
                     InkletBadge("a shared little life", color = colors.primary, scribble = true, seed = 4)
                 }
+                PenSettings(
+                    roughness = roughness,
+                    setRoughness = { roughness = it },
+                    boil = boil,
+                    setBoil = { boil = it },
+                    motion = motion,
+                    setMotion = { motion = it },
+                    dark = dark,
+                    setDark = { dark = it },
+                )
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         "Good things,\none scribble at a time.",
@@ -146,32 +156,12 @@ fun Gallery(
                     if (maxWidth < 740.dp) {
                         Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                             OurList(Modifier.fillMaxWidth())
-                            PenTray(
-                                modifier = Modifier.fillMaxWidth(),
-                                motion = motion,
-                                setMotion = { motion = it },
-                                dark = dark,
-                                setDark = { dark = it },
-                                roughness = roughness,
-                                setRoughness = { roughness = it },
-                                boil = boil,
-                                setBoil = { boil = it },
-                            )
+                            PenTray(Modifier.fillMaxWidth())
                         }
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
                             OurList(Modifier.weight(1.2f))
-                            PenTray(
-                                modifier = Modifier.weight(1f),
-                                motion = motion,
-                                setMotion = { motion = it },
-                                dark = dark,
-                                setDark = { dark = it },
-                                roughness = roughness,
-                                setRoughness = { roughness = it },
-                                boil = boil,
-                                setBoil = { boil = it },
-                            )
+                            PenTray(Modifier.weight(1f))
                         }
                     }
                 }
@@ -372,17 +362,7 @@ private fun OurList(modifier: Modifier) {
 }
 
 @Composable
-private fun PenTray(
-    modifier: Modifier,
-    motion: Boolean,
-    setMotion: (Boolean) -> Unit,
-    dark: Boolean,
-    setDark: (Boolean) -> Unit,
-    roughness: Float,
-    setRoughness: (Float) -> Unit,
-    boil: Float,
-    setBoil: (Float) -> Unit,
-) {
+private fun PenTray(modifier: Modifier) {
     var selected by remember { mutableIntStateOf(0) }
     var saved by remember { mutableStateOf(false) }
     InkletCard(modifier, seed = 40) {
@@ -439,33 +419,79 @@ private fun PenTray(
                     )
                 }
             }
-            PenSetting("Roughness", "Smooth to loosely sketched", roughness, 0f..3f, setRoughness, seed = 60)
-            PenSetting("Boil", "How much the ink moves", boil, 0f..1f, setBoil, seed = 61)
-            if (!motion) {
-                Text("Turn on motion to preview boil.", style = MaterialTheme.typography.bodySmall)
-            }
-            InkletButton(
-                {
-                    setRoughness(InkletStyle().roughness.toFloat())
-                    setBoil(0.3f)
-                },
-                variant = InkletVariant.Outline,
-                seed = 62,
-            ) { Text("Reset pen settings") }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("A little motion")
-                InkletToggle(motion, setMotion, Modifier.semantics { contentDescription = "A little motion" }, seed = 46)
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Evening paper")
-                InkletToggle(dark, setDark, Modifier.semantics { contentDescription = "Evening paper" }, seed = 47)
-            }
             Text(
                 "Imperfect lines. Perfectly us.",
                 fontFamily = FontFamily.Serif,
                 fontSize = 18.sp,
                 modifier = Modifier.inkletDecoration(InkletDecoration.Highlight, seed = 48).padding(6.dp),
             )
+        }
+    }
+}
+
+@Composable
+private fun PenSettings(
+    roughness: Float,
+    setRoughness: (Float) -> Unit,
+    boil: Float,
+    setBoil: (Float) -> Unit,
+    motion: Boolean,
+    setMotion: (Boolean) -> Unit,
+    dark: Boolean,
+    setDark: (Boolean) -> Unit,
+) {
+    InkletCard(Modifier.fillMaxWidth(), seed = 59) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                if (maxWidth < 600.dp) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PenSetting("Roughness", "Smooth to loosely sketched", roughness, 0f..3f, setRoughness, seed = 60)
+                        PenSetting("Boil", "How much the ink moves", boil, 0f..1f, setBoil, seed = 61)
+                    }
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                        PenSetting(
+                            "Roughness",
+                            "Smooth to loosely sketched",
+                            roughness,
+                            0f..3f,
+                            setRoughness,
+                            seed = 60,
+                            modifier = Modifier.weight(1f),
+                        )
+                        PenSetting(
+                            "Boil",
+                            "How much the ink moves",
+                            boil,
+                            0f..1f,
+                            setBoil,
+                            seed = 61,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
+            if (!motion) {
+                Text("Turn on motion to preview boil.", style = MaterialTheme.typography.bodySmall)
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("A little motion")
+                    InkletToggle(motion, setMotion, Modifier.semantics { contentDescription = "A little motion" }, seed = 46)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Evening paper")
+                    InkletToggle(dark, setDark, Modifier.semantics { contentDescription = "Evening paper" }, seed = 47)
+                }
+                InkletButton(
+                    {
+                        setRoughness(InkletStyle().roughness.toFloat())
+                        setBoil(0.3f)
+                    },
+                    variant = InkletVariant.Outline,
+                    seed = 62,
+                ) { Text("Reset pen settings") }
+            }
         }
     }
 }
@@ -478,8 +504,9 @@ private fun PenSetting(
     range: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit,
     seed: Int,
+    modifier: Modifier = Modifier,
 ) {
-    Column {
+    Column(modifier) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, style = MaterialTheme.typography.labelLarge)
             val tenths = kotlin.math.round(value * 10).toInt()

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+
 plugins {
     kotlin("multiplatform")
     id("com.android.kotlin.multiplatform.library")
@@ -18,6 +20,15 @@ kotlin {
         }
     }
     jvm("desktop")
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser {
+            commonWebpackConfig {
+                outputFileName = "inklet.js"
+            }
+        }
+        binaries.executable()
+    }
     sourceSets {
         commonMain.dependencies {
             implementation(project(":"))
