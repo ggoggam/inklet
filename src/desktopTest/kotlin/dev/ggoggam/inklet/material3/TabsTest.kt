@@ -45,9 +45,11 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.ggoggam.inklet.InkletStyle
 import dev.ggoggam.inklet.InkletTheme
+import kotlinx.coroutines.Dispatchers
 import java.io.ByteArrayInputStream
 import java.io.File
 import javax.imageio.ImageIO
+import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.Test
@@ -488,7 +490,18 @@ class TabsTest {
         coroutineContext: CoroutineContext = EmptyCoroutineContext,
         test: (ImageComposeScene) -> Unit,
     ) {
-        val scene = ImageComposeScene(360, 260, coroutineContext = coroutineContext) { MaterialTheme(content = content) }
+        // Keep input, rendering, and global snapshot notifications on the UI thread.
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeAndWait { withScene(content, coroutineContext, test) }
+            return
+        }
+        val scene =
+            ImageComposeScene(
+                360,
+                260,
+                // Preserve the scene's default dispatcher when adding a motion scale.
+                coroutineContext = Dispatchers.Unconfined + coroutineContext,
+            ) { MaterialTheme(content = content) }
         times[scene] = 0
         try {
             scene.advance()
