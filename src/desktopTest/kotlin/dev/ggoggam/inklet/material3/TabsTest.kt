@@ -20,6 +20,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
@@ -178,6 +179,121 @@ class TabsTest {
     }
 
     @Test
+    fun ribbonSurroundsSelectedTabAndFollowsClicksInBothDirections() {
+        for (kind in RowKind.entries) {
+            for (direction in LayoutDirection.entries) {
+                var selected by mutableIntStateOf(0)
+                withScene({
+                    CompositionLocalProvider(LocalLayoutDirection provides direction) {
+                        InkletTheme(reduceMotion = true) {
+                            tabs(kind, selected, { selected = it }, ribbon = true)
+                        }
+                    }
+                }) { scene ->
+                    fun assertRibbon() {
+                        val bounds = scene.node("tab $selected").boundsInRoot
+                        val pixels = scene.redPixels()
+                        assertTrue(pixels.isNotEmpty(), "$kind $direction missing ribbon")
+                        assertTrue(pixels.all { (x, y) -> x >= bounds.left && x < bounds.right && y >= bounds.top && y < bounds.bottom })
+                        assertTrue(pixels.any { (_, y) -> y < bounds.top + 12 }, "Ribbon must pass above the label")
+                        assertTrue(pixels.any { (_, y) -> y > bounds.bottom - 12 }, "Ribbon must pass below the label")
+                        assertTrue(pixels.any { (x, _) -> x < bounds.left + 12 }, "Ribbon must wrap the left side")
+                        assertTrue(pixels.any { (x, _) -> x > bounds.right - 12 }, "Ribbon must wrap the right side")
+                    }
+                    assertRibbon()
+                    val second = scene.node("tab 1")
+                    scene.sendPointerEvent(PointerEventType.Press, second.boundsInRoot.center, button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Release, second.boundsInRoot.center, button = PointerButton.Primary)
+                    scene.advance()
+                    assertEquals(1, selected)
+                    assertTrue(scene.node("tab 1").config[SemanticsProperties.Selected])
+                    assertRibbon()
+                    val still = scene.pixels()
+                    scene.advance()
+                    assertTrue(still.contentEquals(scene.pixels()))
+                }
+            }
+        }
+    }
+
+    @Test
+    fun ribbonStaysAlignedAfterScrollingWithEdgePaddingAndNoPlatformMotion() {
+        for (kind in RowKind.entries.filter { it.scrollable }) {
+            for (direction in LayoutDirection.entries) {
+                var selected by mutableIntStateOf(0)
+                withScene(
+                    content = {
+                        CompositionLocalProvider(LocalLayoutDirection provides direction) {
+                            InkletTheme(reduceMotion = true) {
+                                tabs(kind, selected, { selected = it }, count = 8, ribbon = true)
+                            }
+                        }
+                    },
+                    coroutineContext = NoMotion,
+                ) { scene ->
+                    selected = 7
+                    scene.advance()
+                    val last = scene.node("tab 7").boundsInRoot
+                    val ink = scene.redPixels()
+                    assertTrue(last.left >= 0 && last.right <= 360)
+                    assertTrue(ink.isNotEmpty() && ink.all { (x, _) -> x >= last.left && x < last.right })
+                }
+            }
+        }
+    }
+
+    @Test
+    fun fractionalRibbonUnwindsAcrossUnequalTabsAndClampsProgress() {
+        for (direction in LayoutDirection.entries) {
+            var progress by mutableFloatStateOf(0f)
+            withScene({
+                CompositionLocalProvider(LocalLayoutDirection provides direction) {
+                    InkletTheme(reduceMotion = true) {
+                        tabs(
+                            RowKind.ScrollablePrimary,
+                            if (progress >= 0.5f) 1 else 0,
+                            {},
+                            ribbon = true,
+                            ribbonProgress = { progress },
+                        )
+                    }
+                }
+            }) { scene ->
+                val initial = scene.pixels()
+                val first = scene.node("tab 0").boundsInRoot
+                val second = scene.node("tab 1").boundsInRoot
+                assertTrue(first.width != second.width, "Exercise different section lengths")
+                progress = 0.5f
+                scene.advance()
+                val ink = scene.redPixels()
+                val span = ink.maxOf { it.first } - ink.minOf { it.first }
+                assertTrue(span > maxOf(first.width, second.width) * 1.4f, "A moving ribbon must span both tabs, not slide a closed oval")
+                assertTrue(ink.any { (x, _) -> x >= first.left && x < first.right })
+                assertTrue(ink.any { (x, _) -> x >= second.left && x < second.right })
+                for (step in 0..8) {
+                    progress = step / 8f
+                    scene.advance()
+                    File("build/reports/tabs/ribbon-${direction.name}-$step.png").apply { parentFile.mkdirs() }.writeBytes(scene.pixels())
+                }
+                progress = 0f
+                scene.advance()
+                assertTrue(initial.contentEquals(scene.pixels()), "Reversing progress restores the same seeded path")
+                for (invalid in listOf(-1f, Float.NEGATIVE_INFINITY, Float.NaN)) {
+                    progress = invalid
+                    scene.advance()
+                    assertTrue(initial.contentEquals(scene.pixels()))
+                }
+                progress = 2f
+                scene.advance()
+                val last = scene.pixels()
+                progress = Float.POSITIVE_INFINITY
+                scene.advance()
+                assertTrue(last.contentEquals(scene.pixels()))
+            }
+        }
+    }
+
+    @Test
     fun lightDarkRtlAndMaximumPenPreviews() {
         for (dark in listOf(false, true)) {
             for (direction in LayoutDirection.entries) {
@@ -187,11 +303,24 @@ class TabsTest {
                             InkletTheme(reduceMotion = true) {
                                 Column {
                                     RowKind.entries.forEach { kind ->
-                                        tabs(kind, 1, {}, count = if (kind.scrollable) 8 else 3, ink = MaterialTheme.colorScheme.primary)
+                                        tabs(
+                                            kind,
+                                            1,
+                                            {},
+                                            count = if (kind.scrollable) 8 else 3,
+                                            ink = MaterialTheme.colorScheme.primary,
+                                            ribbon = kind.primary,
+                                        )
                                     }
                                     InkletTheme(InkletStyle(roughness = 3.0, boil = 1.0), reduceMotion = true) {
-                                        // More vertical room for a large pen, as in the documented recipe.
-                                        tabs(RowKind.FixedPrimary, 0, {}, ink = MaterialTheme.colorScheme.primary, roomy = true)
+                                        // The ribbon reserves space for the gallery's largest pen settings.
+                                        tabs(
+                                            RowKind.FixedPrimary,
+                                            0,
+                                            {},
+                                            ink = MaterialTheme.colorScheme.primary,
+                                            ribbon = true,
+                                        )
                                     }
                                 }
                             }
@@ -228,19 +357,38 @@ class TabsTest {
         scrollState: ScrollState = rememberScrollState(),
         ink: Color = Color.Red,
         roomy: Boolean = false,
+        ribbon: Boolean = false,
+        ribbonProgress: (() -> Float)? = null,
     ) {
         val indicator: @Composable TabIndicatorScope.() -> Unit = {
-            InkletTabIndicator(
-                Modifier
-                    .tabIndicatorOffset(
-                        selected,
-                        matchContentSize = kind.primary,
-                    ).then(if (roomy) Modifier.height(20.dp) else Modifier),
-                color = ink,
-                seed = 42,
-            )
+            if (ribbonProgress != null) {
+                InkletTabRibbonIndicator(
+                    progress = ribbonProgress,
+                    selectedTabIndex = selected,
+                    color = ink,
+                    seed = 42,
+                )
+            } else if (ribbon) {
+                InkletTabRibbonIndicator(
+                    selectedTabIndex = selected,
+                    color = ink,
+                    seed = 42,
+                )
+            } else {
+                InkletTabIndicator(
+                    Modifier
+                        .tabIndicatorOffset(
+                            selected,
+                            matchContentSize = kind.primary,
+                        ).then(if (roomy) Modifier.height(20.dp) else Modifier),
+                    color = ink,
+                    seed = 42,
+                )
+            }
         }
-        val divider: @Composable () -> Unit = { InkletDivider(if (roomy) Modifier.height(20.dp) else Modifier, seed = 43) }
+        val divider: @Composable () -> Unit = {
+            if (!ribbon) InkletDivider(if (roomy) Modifier.height(20.dp) else Modifier, seed = 43)
+        }
         val content: @Composable () -> Unit = {
             repeat(count) { index ->
                 Tab(
@@ -273,7 +421,7 @@ class TabsTest {
                 PrimaryScrollableTabRow(
                     selected,
                     scrollState = scrollState,
-                    edgePadding = 0.dp,
+                    edgePadding = if (ribbon) 20.dp else 0.dp,
                     indicator = indicator,
                     divider = divider,
                     tabs = content,
@@ -284,7 +432,7 @@ class TabsTest {
                 SecondaryScrollableTabRow(
                     selected,
                     scrollState = scrollState,
-                    edgePadding = 0.dp,
+                    edgePadding = if (ribbon) 20.dp else 0.dp,
                     indicator = indicator,
                     divider = divider,
                     tabs = content,

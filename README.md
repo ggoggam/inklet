@@ -310,13 +310,55 @@ PrimaryTabRow(
 For scrolling, replace `PrimaryTabRow` with `PrimaryScrollableTabRow`; its native
 `scrollState`, `edgePadding` and `minTabWidth` remain available. For secondary tabs,
 use either secondary row and `matchContentSize = false` for a full-tab underline.
+
+For the animated looping treatment, import
+`dev.ggoggam.inklet.material3.InkletTabRibbonIndicator` and replace the drawing slots:
+
+```kotlin
+indicator = {
+    InkletTabRibbonIndicator(selectedTabIndex = selected, seed = 70)
+},
+divider = {},
+```
+
+The ribbon follows one continuous path around the tabs. As selection changes,
+its tail unwinds from the old tab and its head wraps around the new one. Four
+quadratic curves give each loop its overlapping stroke, flipped beneath the label.
+Seeded variations in the curve anchors, the theme's pen width and its shared boil clock give it
+Inklet's pen treatment. Complete paths and section lengths are cached; animation
+only extracts the visible segment. This adapts the path-and-length approach from
+[Sina Samaki's custom tab indicator](https://www.sinasamaki.com/custom-tabrow-indicator-in-jetpack-compose/).
+
+The ribbon owns full-row positioning: **do not apply `tabIndicatorOffset`**.
+It supports all four current tab-row variants, including RTL and edge padding.
+For the gallery's compact proportions, use `PrimaryScrollableTabRow` with
+`edgePadding = 0.dp`, `minTabWidth = 112.dp`, and tab content such as
+`Text(label, Modifier.padding(horizontal = 28.dp, vertical = 18.dp))`.
+Equal-width fixed rows deliberately spread each loop across its allocated tab.
+
+Index changes animate over 450ms by default; `animationSpec` accepts a Compose
+finite animation spec. Reduced motion snaps index changes and freezes the pen.
+For a pager, pass its fractional position directly so the ribbon follows the drag:
+
+```kotlin
+InkletTabRibbonIndicator(
+    selectedTabIndex = pagerState.currentPage, // same index as the native row
+    progress = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
+    seed = 70,
+)
+```
+
+The progress overload does not add another animation. The caller owns its motion
+and reduced-motion handling; progress is clamped to the tab range. Material owns
+selection semantics, keyboard input and scrolling the selected tab into view.
+
 Keep the index valid for a nonempty tab list and hoist both the selection and the
 associated content. Text, icons and ripple remain native. Material's `Tab` does
 not dim disabled labels automatically in this version; the recipe supplies an
 explicit disabled label color through `unselectedContentColor`.
 Replacing both slots suppresses Material's original indicator and divider.
 
-The indicator uses the theme's primary color and pen width; the divider uses
+The underline uses the theme's primary color and pen width; the divider uses
 outline-variant. Both reserve 8dp vertically so their strokes share a baseline.
 For a large pen, give **both** `Modifier.height(20.dp)` (enough for the gallery's
 roughness 3 / boil 1 settings), keeping room below tab labels. Use a custom color
@@ -480,7 +522,10 @@ Chip and icon-button tests check native actions, pointer clicks, selection, disa
 callbacks, custom state colors, RTL slot order, focus drawing and reduced motion.
 Tab recipes are tested on all four current row variants for pointer and keyboard
 selection, focus, disabled tabs, indicator placement, content/full widths, RTL,
-scroll-to-selection and static pen drawing. Light/dark and RTL scene previews are
+scroll-to-selection and static pen drawing. Ribbon indicators also have rendered
+coverage for full-height placement, clicks, RTL, scrolling with edge padding,
+fractional progress across unequal-width tabs, reversal and progress clamping.
+Light/dark and RTL scene previews are
 written to `build/reports/tabs/` by `TabsTest` for visual review.
 Text-field tests check editing, selection, focus, IME actions, disabled/read-only
 and error semantics, state colors, multiline limits, animated outline gaps, RTL,
