@@ -3,12 +3,15 @@ package dev.ggoggam.inklet.material3
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.HoverInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
@@ -28,6 +32,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -38,7 +43,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -179,7 +186,7 @@ fun InkletCheckbox(
             enabled = enabled,
             role = Role.Checkbox,
             interactionSource = source,
-            indication = androidx.compose.foundation.LocalIndication.current,
+            indication = null,
             onValueChange = { if (enabled) onCheckedChange(it) },
         ),
         contentAlignment = Alignment.Center,
@@ -195,6 +202,7 @@ fun InkletCheckbox(
                 ),
             )
         }
+        ControlIndication(source, RoundedCornerShape(6.dp))
     }
 }
 
@@ -216,19 +224,21 @@ fun InkletRadioButton(
             enabled = enabled,
             role = Role.RadioButton,
             interactionSource = source,
-            indication = androidx.compose.foundation.LocalIndication.current,
+            indication = null,
             onClick = { if (enabled) onClick() },
         ),
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(30.dp).sketch(PenShape.Ellipse, ink, seed = sketchSeed))
         if (selected) Box(Modifier.size(18.dp).sketch(PenShape.Dot, ink, ink, seed = sketchSeed + 1))
+        ControlIndication(source, CircleShape)
     }
 }
 
 /**
  * Slides the thumb and pencil-shades the checked track using [animationSpec].
  * Defaults to the theme's toggle animation; reduced motion applies both immediately.
+ * Material's unbounded circular ripple follows the thumb, independently of the touch target.
  */
 @Composable
 fun InkletToggle(
@@ -257,7 +267,7 @@ fun InkletToggle(
             enabled = enabled,
             role = Role.Switch,
             interactionSource = source,
-            indication = androidx.compose.foundation.LocalIndication.current,
+            indication = null,
             onValueChange = { if (enabled) onCheckedChange(it) },
         ),
         contentAlignment = Alignment.Center,
@@ -278,10 +288,22 @@ fun InkletToggle(
                     .offset(x = 20.dp * progress)
                     .padding(horizontal = 4.dp)
                     .size(24.dp)
+                    // Match Material 3 Switch: a 40dp state layer centered on the moving thumb.
+                    .indication(source, ripple(bounded = false, radius = 20.dp))
                     .sketch(PenShape.Ellipse, ink, ink, seed = sketchSeed),
             )
         }
     }
+}
+
+@Composable
+private fun BoxScope.ControlIndication(
+    source: MutableInteractionSource,
+    shape: Shape,
+) {
+    // Clip only the feedback: the full rectangular touch target and pen strokes stay intact.
+    // Matching the host size also keeps press coordinates aligned with the indication.
+    Box(Modifier.matchParentSize().clip(shape).indication(source, LocalIndication.current))
 }
 
 @Composable
