@@ -3,6 +3,7 @@ package dev.ggoggam.inklet.material3
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
@@ -49,6 +50,7 @@ fun InkletIconButton(
         enabled = enabled,
         colors = colors.copy(containerColor = Color.Transparent, disabledContainerColor = Color.Transparent),
         interactionSource = source,
+        shape = CircleShape,
         content = content,
     )
 }
@@ -98,6 +100,7 @@ fun InkletIconToggleButton(
                 checkedContainerColor = Color.Transparent,
             ),
         interactionSource = source,
+        shape = CircleShape,
         content = content,
     )
 }

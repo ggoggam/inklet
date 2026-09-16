@@ -68,6 +68,27 @@ color fields private. Inklet's shared selectable palette uses surface-variant
 content and secondary-container selected colors; customize it with `copy`.
 See the [chip and icon-button API](../README.md#chips-and-icon-buttons).
 
+### Interaction feedback shapes
+
+Checkboxes, radio buttons and toggles retain their full rectangular touch targets.
+Checkbox and radio indications are drawn in a separate, equally sized layer with
+rounded corners and a circular shape, respectively. Only that layer is clipped,
+so pen strokes and corner taps remain intact. The layer uses the host's
+`LocalIndication` and interaction source, including hover and focus feedback.
+Toggles follow Material 3 Switch: an unbounded ripple with a 20dp radius is attached
+to the thumb. The circular hover/focus highlight and press ripple follow the thumb's
+animated position in both layout directions.
+Icon buttons explicitly use a circular Material shape; buttons and chips pass
+their configured corner radius to Material's container and ripple clipping.
+
+Text fields and sliders have no container click ripple. Tab indicators, progress
+indicators, cards, badges, dividers and drawing modifiers do not add one either;
+interactive native hosts (including the gallery's card, surface and tab recipes)
+own their feedback. Desktop rendering tests cover pressed feedback in light and
+dark themes for all ten ripple-bearing adapters, disabled controls and corner
+taps on the custom controls. Switch hover and press feedback are checked in both
+states and layout directions. Review images are in `build/reports/ripples/`.
+
 ### Tab slot audit (Material 3 1.9.0)
 
 The pinned [Material sources](https://repo.maven.apache.org/maven2/org/jetbrains/compose/material3/material3/1.9.0/material3-1.9.0-sources.jar),
