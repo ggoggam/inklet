@@ -19,7 +19,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Tab
@@ -63,6 +63,7 @@ import dev.ggoggam.inklet.material3.InkletRadioButton
 import dev.ggoggam.inklet.material3.InkletSlider
 import dev.ggoggam.inklet.material3.InkletSuggestionChip
 import dev.ggoggam.inklet.material3.InkletTabIndicator
+import dev.ggoggam.inklet.material3.InkletTabRibbonIndicator
 import dev.ggoggam.inklet.material3.InkletTextField
 import dev.ggoggam.inklet.material3.InkletToggle
 import dev.ggoggam.inklet.material3.InkletVariant
@@ -242,13 +243,15 @@ private fun NotebookTabs(
     val pen = LocalInkletStyle.current
     val lineHeight = maxOf(8.0, 2 * (2.1 * pen.roughness + pen.boil) + pen.strokeWidth.value + 2).dp
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        PrimaryTabRow(
+        PrimaryScrollableTabRow(
             selectedTabIndex = notebook,
+            edgePadding = 0.dp,
+            minTabWidth = 112.dp,
             containerColor = Color.Transparent,
             indicator = {
-                InkletTabIndicator(Modifier.tabIndicatorOffset(notebook, matchContentSize = true).height(lineHeight), seed = 70)
+                InkletTabRibbonIndicator(selectedTabIndex = notebook, seed = 70)
             },
-            divider = { InkletDivider(Modifier.height(lineHeight), seed = 71) },
+            divider = {},
         ) {
             listOf("Our plans", "Memories", "Someday").forEachIndexed { index, label ->
                 Tab(
@@ -263,8 +266,9 @@ private fun NotebookTabs(
                         } else {
                             MaterialTheme.colorScheme.primary
                         },
-                    text = { Text(label) },
-                )
+                ) {
+                    Text(label, Modifier.padding(horizontal = 28.dp, vertical = 18.dp))
+                }
             }
         }
         val chapters =
