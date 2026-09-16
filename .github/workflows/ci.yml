@@ -28,6 +28,8 @@ jobs:
           version: "2026.8.5"
           install_args: "--locked"
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
       - run: mise run pre-commit
