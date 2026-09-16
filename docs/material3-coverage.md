@@ -51,7 +51,7 @@ promising automatic restyling of arbitrary descendants.
 | Text fields | String outlined input with native floating-label gaps, icons, prefix/suffix, supporting/error text, read-only state, colors and visual transformations | `TextFieldValue`/state-based APIs, input/output transformations, secure/filled fields, alternate label positions and arbitrary shapes |
 | Sliders | Continuous `InkletSlider` using Material slots | Discrete ticks, range and vertical variants |
 | Chips | `InkletAssistChip`, `InkletSuggestionChip`, `InkletFilterChip`, `InkletInputChip`; native slots, selected/disabled colors and interactions | Elevated variants and arbitrary shapes; selected checkmarks/removal actions remain caller content |
-| Tabs | `InkletTabIndicator` and `InkletDivider` slot recipes for native primary/secondary fixed and scrollable rows | Native labels, icons and ripple; no indicator-shape parity or tab-row adapter |
+| Tabs | `InkletTabIndicator`, `InkletTabRibbonIndicator` and `InkletDivider` slot recipes for native primary/secondary fixed and scrollable rows | Native labels, icons and ripple; no indicator-shape parity or tab-row adapter |
 | Navigation, app bars | Small top-app-bar container recipe; no navigation adapter | Other app-bar variants/collapse validation, selected navigation indicators, drawers, rails and bars |
 | Menus, dialogs, sheets, tooltips, snackbars | Native dropdown, alert dialog and caret-free plain-tooltip fill recipes; snackbar border recipe; inset modal-sheet panel | Whole-sheet drawing, tooltip carets, flat snackbar shadow removal and other popup variants need adapters or further slot work |
 | Progress indicators | Linear/circular, determinate/indeterminate, progress semantics and RTL linear direction; loading clock independent of boil | Material track gaps, stop markers, exact loading choreography and expressive variants |
@@ -85,6 +85,13 @@ exposes no experimental upstream types. Both default drawing slots are replaced,
 so no native indicator or divider is drawn underneath. `InkletTabIndicator` and
 the existing `InkletDivider` share an 8dp drawing height. The gallery increases
 both heights with its live pen settings to leave room for roughness and boil.
+`InkletTabRibbonIndicator` draws a continuous, measured ribbon across the full row,
+using `tabIndicatorLayout` rather than the native sliding offset. It compensates
+for the pinned scrollable row's selected-slot centering and mirrors full-row
+coordinates in RTL. Compact primary tabs show the ribbon in the gallery; chapter
+tabs retain underlines. Use an empty divider slot with the ribbon. Its index
+overload animates selection and snaps for reduced motion; the progress overload
+follows caller-owned fractional pager progress without a second animation.
 The host supplies valid selection and associated content, and can customize
 native tab colors and interactions. See the [copyable tab recipe](../README.md#tabs-and-selection-indicators).
 
