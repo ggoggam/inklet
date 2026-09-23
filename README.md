@@ -35,8 +35,8 @@ Check wishes to change progress; loading keeps moving with boil set to zero.
 Sample data lives only in memory. To export a deterministic native rendering:
 
 ```sh
-./gradlew :sample:run --args='--snapshot /tmp/inklet.png 1120 1700'
-./gradlew :sample:run --args='--snapshot /tmp/inklet-dark.png 1120 1700 --dark'
+./gradlew :sample:run --args='--snapshot /tmp/inklet.png 1120 2800'
+./gradlew :sample:run --args='--snapshot /tmp/inklet-dark.png 1120 2800 --dark'
 ```
 
 Toolchain: Kotlin 2.4.0-RC, Compose 1.11.0, Material 3 1.9.0, AGP 9.2.1,
