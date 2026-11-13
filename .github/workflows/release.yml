@@ -1,7 +1,7 @@
 name: Release
 
 # As in Vitre, a committed version bump is the release; tags record successful publishes.
-# Stable versions go to Maven Central, prereleases (anything with a `-`) to GitHub Packages.
+# Every version, stable or prerelease (anything with a `-`), goes to GitHub Packages.
 on:
   push:
     branches: [main]
@@ -13,7 +13,8 @@ permissions:
 env:
   MISE_ENV: ci
 
-# Never cancel an upload that may already have reached Central.
+# Never cancel a publish in progress: GitHub Packages uploads are not atomic, so a cancelled run can
+# leave a partial version behind, and files already uploaded cannot be replaced.
 concurrency:
   group: release-${{ github.ref }}
 
@@ -71,10 +72,11 @@ jobs:
     if: needs.decide.outputs.release == 'true'
     # A Mac can publish every target, including both Apple klibs.
     runs-on: macos-latest
+    # Only the signing secrets in this environment are used. Its name dates from Maven Central.
     environment: maven-central
     permissions:
       contents: write
-      # Release candidates are published to this repository's GitHub Packages registry.
+      # Releases are published to this repository's GitHub Packages registry.
       packages: write
     steps:
       - uses: actions/checkout@v6
@@ -87,33 +89,23 @@ jobs:
           packages: platform-tools
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Publish to Maven Central
-        if: needs.decide.outputs.prerelease != 'true'
-        env:
-          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          for key in ORG_GRADLE_PROJECT_mavenCentralUsername ORG_GRADLE_PROJECT_mavenCentralPassword ORG_GRADLE_PROJECT_signingInMemoryKey; do
-            if [ -z "${!key}" ]; then
-              echo "::error::Missing $key in the maven-central environment"
-              exit 1
-            fi
-          done
-          mise run publish
-      # Prereleases go to GitHub Packages, not Central: Central's free tier counts releases and files
-      # per month across the dev.ggoggam organisation, Vitre included.
-      - name: Publish release candidate to GitHub Packages
-        if: needs.decide.outputs.prerelease == 'true'
+      # Not atomic, and GitHub Packages answers 409 for any file that already exists. Before
+      # re-running a failed publish, delete this version from every dev.ggoggam.inklet package
+      # under https://github.com/ggoggam/inklet/packages, or bump VERSION_NAME instead.
+      - name: Publish to GitHub Packages
         env:
           ORG_GRADLE_PROJECT_GitHubPackagesUsername: ${{ github.actor }}
           ORG_GRADLE_PROJECT_GitHubPackagesPassword: ${{ github.token }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
-        run: mise run publish:rc
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$ORG_GRADLE_PROJECT_signingInMemoryKey" ]; then
+            echo "::error::Missing SIGNING_IN_MEMORY_KEY in the maven-central environment"
+            exit 1
+          fi
+          mise run publish
       - name: Tag the release
         env:
           VERSION: ${{ needs.decide.outputs.version }}

@@ -72,20 +72,11 @@ or set `CHROME_BIN` to its executable.
 
 ## Use from another app
 
-Inklet is on Maven Central. With `mavenCentral()` in your repositories, add this to
-`commonMain.dependencies`:
-
-```kotlin
-implementation("dev.ggoggam.inklet:inklet:0.3.0")
-```
-
-Gradle selects the Android, iOS, desktop or Wasm artifact automatically. See
-[releasing](CONTRIBUTING.md#releasing) for the publication process.
-
-Release candidates (`-rc.N` versions) are published to
-[GitHub Packages](https://github.com/ggoggam/inklet/packages) instead. GitHub asks for a token
-even to read a public package, so use a classic personal access token with the `read:packages`
-scope:
+Inklet is published to [GitHub Packages](https://github.com/ggoggam/inklet/packages). GitHub
+asks for a token even to read a public package, so create a classic personal access token with the
+`read:packages` scope and put it in `~/.gradle/gradle.properties` as `gpr.user` (your GitHub
+username) and `gpr.key` (the token), or export `GITHUB_ACTOR` and `GITHUB_TOKEN`. Then add the
+repository:
 
 ```kotlin
 // settings.gradle.kts
@@ -102,6 +93,17 @@ dependencyResolutionManagement {
     }
 }
 ```
+
+Then add this to `commonMain.dependencies`:
+
+```kotlin
+implementation("dev.ggoggam.inklet:inklet:0.3.0")
+```
+
+Gradle selects the Android, iOS, desktop or Wasm artifact automatically. Versions up to 0.3.0
+were published to Maven Central and remain there, so they also resolve from `mavenCentral()`
+alone; later versions, including release candidates (`-rc.N`), are only on GitHub Packages. See
+[releasing](CONTRIBUTING.md#releasing) for the publication process.
 
 To build against an unreleased change, clone this repository beside your app and add
 `includeBuild("../inklet")` to the consumer's `settings.gradle.kts`.
@@ -524,7 +526,7 @@ Install Git hooks with `mise exec -- prek install`.
 compilation, Android library compilation, Wasm geometry tests, and a production
 browser gallery build. Releases reuse that workflow before
 publishing every library target from macOS. See [CONTRIBUTING.md](CONTRIBUTING.md)
-for local publication and Maven Central setup.
+for local publication and release setup.
 
 ## Validation
 

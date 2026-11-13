@@ -49,12 +49,13 @@ kotlin {
     }
 }
 
-// Release candidates go to GitHub Packages rather than Maven Central, whose free tier counts releases
-// and files per month across the whole dev.ggoggam organisation (Vitre included). Stable versions
-// still go to Central through the publish plugin's own repository; this one is only published to by
-// `mise run publish:rc`. The credentials are the gradle properties GitHubPackagesUsername and
-// GitHubPackagesPassword, which the release workflow passes as ORG_GRADLE_PROJECT_*; Gradle only
-// asks for them when a task publishing here is in the graph.
+// Every release, stable or prerelease, goes to this repository's GitHub Packages registry with
+// `mise run publish`. Versions up to 0.3.0 stay on Maven Central. The credentials are the gradle
+// properties GitHubPackagesUsername and GitHubPackagesPassword, which the release workflow passes
+// as ORG_GRADLE_PROJECT_*; Gradle only asks for them when a task publishing here is in the graph.
+// Uploads are not atomic, and GitHub Packages rejects a file that already exists (409), so a
+// version cannot be overwritten or re-published after a partial upload: delete that version from
+// each package first, or bump VERSION_NAME.
 publishing {
     repositories {
         maven {
