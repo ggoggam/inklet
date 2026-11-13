@@ -48,3 +48,19 @@ kotlin {
         }
     }
 }
+
+// Release candidates go to GitHub Packages rather than Maven Central, whose free tier counts releases
+// and files per month across the whole dev.ggoggam organisation (Vitre included). Stable versions
+// still go to Central through the publish plugin's own repository; this one is only published to by
+// `mise run publish:rc`. The credentials are the gradle properties GitHubPackagesUsername and
+// GitHubPackagesPassword, which the release workflow passes as ORG_GRADLE_PROJECT_*; Gradle only
+// asks for them when a task publishing here is in the graph.
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/ggoggam/inklet")
+            credentials(PasswordCredentials::class)
+        }
+    }
+}

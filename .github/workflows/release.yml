@@ -1,6 +1,7 @@
 name: Release
 
 # As in Vitre, a committed version bump is the release; tags record successful publishes.
+# Stable versions go to Maven Central, prereleases (anything with a `-`) to GitHub Packages.
 on:
   push:
     branches: [main]
@@ -73,6 +74,8 @@ jobs:
     environment: maven-central
     permissions:
       contents: write
+      # Release candidates are published to this repository's GitHub Packages registry.
+      packages: write
     steps:
       - uses: actions/checkout@v6
       - uses: jdx/mise-action@v3
@@ -85,6 +88,7 @@ jobs:
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
       - name: Publish to Maven Central
+        if: needs.decide.outputs.prerelease != 'true'
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
@@ -100,6 +104,16 @@ jobs:
             fi
           done
           mise run publish
+      # Prereleases go to GitHub Packages, not Central: Central's free tier counts releases and files
+      # per month across the dev.ggoggam organisation, Vitre included.
+      - name: Publish release candidate to GitHub Packages
+        if: needs.decide.outputs.prerelease == 'true'
+        env:
+          ORG_GRADLE_PROJECT_GitHubPackagesUsername: ${{ github.actor }}
+          ORG_GRADLE_PROJECT_GitHubPackagesPassword: ${{ github.token }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+        run: mise run publish:rc
       - name: Tag the release
         env:
           VERSION: ${{ needs.decide.outputs.version }}

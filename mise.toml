@@ -154,6 +154,12 @@ run = "prek run --show-diff-on-failure --color=always --all-files --hook-stage=m
 description = "Publish all library targets to Maven Central (requires macOS, credentials and signing key)"
 run = "./gradlew --no-daemon --no-configuration-cache publishAndReleaseToMavenCentral"
 
+[tasks."publish:rc"]
+description = "Publish all library targets to GitHub Packages (CI only — for -rc.N versions)"
+# Release candidates skip Maven Central to stay under its per-organisation monthly file and release
+# limits. Credentials come from ORG_GRADLE_PROJECT_GitHubPackagesUsername/-Password.
+run = "./gradlew --no-daemon --no-configuration-cache publishAllPublicationsToGitHubPackagesRepository"
+
 [tasks."publish:local"]
 description = "Publish all library targets to Maven Local without signing (requires macOS)"
 run = "./gradlew --no-daemon --no-configuration-cache publishToMavenLocal -PsignAllPublications=false"

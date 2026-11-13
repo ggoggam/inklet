@@ -72,24 +72,39 @@ or set `CHROME_BIN` to its executable.
 
 ## Use from another app
 
-Inklet is being prepared for Maven Central; no version has been released yet.
-Until the first release, clone this repository beside your app and add the build
-in the consumer's `settings.gradle.kts`:
+Inklet is on Maven Central. With `mavenCentral()` in your repositories, add this to
+`commonMain.dependencies`:
 
 ```kotlin
-includeBuild("../inklet")
+implementation("dev.ggoggam.inklet:inklet:0.3.0")
 ```
 
-Add this to `commonMain.dependencies`:
+Gradle selects the Android, iOS, desktop or Wasm artifact automatically. See
+[releasing](CONTRIBUTING.md#releasing) for the publication process.
+
+Release candidates (`-rc.N` versions) are published to
+[GitHub Packages](https://github.com/ggoggam/inklet/packages) instead. GitHub asks for a token
+even to read a public package, so use a classic personal access token with the `read:packages`
+scope:
 
 ```kotlin
-implementation("dev.ggoggam.inklet:inklet:0.1.0-LOCAL")
+// settings.gradle.kts
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven("https://maven.pkg.github.com/ggoggam/inklet") {
+            credentials {
+                username = providers.gradleProperty("gpr.user").orNull ?: System.getenv("GITHUB_ACTOR")
+                password = providers.gradleProperty("gpr.key").orNull ?: System.getenv("GITHUB_TOKEN")
+            }
+            content { includeGroup("dev.ggoggam.inklet") }
+        }
+    }
+}
 ```
 
-After a release, use `mavenCentral()` and the released version of
-`dev.ggoggam.inklet:inklet` in place of the composite build. Gradle selects the
-Android, iOS, desktop or Wasm artifact automatically. See [releasing](CONTRIBUTING.md#releasing)
-for the publication process.
+To build against an unreleased change, clone this repository beside your app and add
+`includeBuild("../inklet")` to the consumer's `settings.gradle.kts`.
 
 Wrap the existing Material theme once:
 

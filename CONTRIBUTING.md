@@ -54,7 +54,11 @@ in [gradle.properties](gradle.properties) on `main` triggers
 [release.yml](.github/workflows/release.yml). It runs the full CI workflow, publishes
 all six publications (root metadata, Android, desktop, iOS arm64, iOS simulator
 arm64 and Wasm/JS) from macOS, then creates `v<version>` and a GitHub release. Prerelease
-versions produce prereleases on GitHub. Pushing a tag does not publish anything.
+versions (`0.4.0-rc.1`) are published to
+[GitHub Packages](https://github.com/ggoggam/inklet/packages) instead of Maven Central, with
+`mise run publish:rc`, and produce prereleases on GitHub. Central's free tier counts releases and
+files per month across the whole `dev.ggoggam` organisation, Vitre included, so release candidates
+stay off it. Pushing a tag does not publish anything.
 Only the library is published; the gallery and platform hosts are samples.
 
 `0.1.0-LOCAL` means the initial release is still being prepared. The workflow skips
