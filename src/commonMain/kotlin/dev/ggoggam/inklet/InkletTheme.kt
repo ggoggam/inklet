@@ -2,20 +2,25 @@ package dev.ggoggam.inklet
 
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlin.math.roundToLong
 
 /**
  * Shared pen settings. [roughness] controls the base drawing's irregularity; zero is smooth.
@@ -60,8 +65,9 @@ internal val LocalSketchFrame =
     }
 
 /**
- * Wrap once around the app: every control shares one three-frame clock. Compose's animation
- * clock honors the platform motion-duration scale; [reduceMotion] also lets a host opt out.
+ * Wrap once around the app: every control shares one three-frame clock. The clock honors the
+ * platform motion-duration scale and holds still when animations are off; [reduceMotion] also
+ * lets a host opt out.
  * [reduceMotion] also freezes loading indicators at a visible indeterminate pose. Pen settings
  * (including [InkletStyle.animate]) do not stop loading motion. No font or color scheme is
  * imposed. Outside this provider controls render a static sketch, with loading motion enabled.
@@ -77,16 +83,9 @@ fun InkletTheme(
     val effective = if (reduceMotion) style.copy(animate = false) else style
     val frame =
         if (effective.animate && effective.boil > 0) {
-            val transition = rememberInfiniteTransition(label = "Inklet pen")
-            val phase =
-                transition.animateFloat(
-                    initialValue = 0f,
-                    targetValue = 3f,
-                    animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing)),
-                    label = "Pen frame",
-                )
-            // Draw observers invalidate only at the three frame boundaries, not at display refresh rate.
-            remember(phase) { derivedStateOf { phase.value.toInt() % 3 } }
+            val pen = remember { mutableIntStateOf(0) }
+            LaunchedEffect(pen) { pen.boil() }
+            pen
         } else {
             rememberUpdatedState(0)
         }
@@ -97,4 +96,26 @@ fun InkletTheme(
         LocalInkletReduceMotion provides reduceMotion,
         content = content,
     )
+}
+
+private const val PEN_FRAMES = 3
+private const val PEN_FRAME_MILLIS = 400L
+
+/**
+ * Steps through the pen's drawings on a timer. An infinite transition would ask for a frame on
+ * every vsync just to change the drawing three times per cycle; waiting instead leaves the app
+ * idle between drawings. A zero [MotionDurationScale] holds the current drawing until it changes.
+ */
+private suspend fun MutableIntState.boil() {
+    val motion = currentCoroutineContext()[MotionDurationScale]
+    while (true) {
+        val scale =
+            when {
+                motion == null -> 1f
+                motion.scaleFactor > 0f -> motion.scaleFactor
+                else -> snapshotFlow { motion.scaleFactor }.first { it > 0f }
+            }
+        delay((PEN_FRAME_MILLIS * scale).roundToLong())
+        intValue = (intValue + 1) % PEN_FRAMES
+    }
 }
