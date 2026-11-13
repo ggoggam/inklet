@@ -352,6 +352,7 @@ class TextFieldTest {
                     val ink = scene.redPixels()
                     assertTrue(ink.isNotEmpty())
                     assertTrue(ink.none { (x, y) -> x > label.left - 2 && x < label.right + 2 && y >= label.top && y < label.bottom })
+                    scene.awaitBoil()
                     times[scene] = times.getValue(scene) + 400_000_000
                     scene.render(times.getValue(scene)).close()
                     scene.render(times.getValue(scene)).close()

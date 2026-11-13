@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
@@ -255,12 +256,50 @@ class ControlsTest {
             }
         }) { scene ->
             val first = scene.pixels(0)
-            // Feed frames as a window does, including the animation's initial effect frames.
-            for (i in 1..9) scene.render(i * 50_000_000L).close()
+            scene.awaitBoil()
             assertFalse(first.contentEquals(scene.pixels(500_000_000)))
             reduceMotion = true
             val still = scene.pixels(600_000_000)
+            Thread.sleep(BOIL_WAIT_MILLIS)
             assertTrue(still.contentEquals(scene.pixels(1_100_000_000)))
+        }
+    }
+
+    @Test
+    fun boilRequestsNoFramesBetweenDrawings() {
+        withScene({
+            InkletTheme(InkletStyle(boil = 1.0)) {
+                InkletRadioButton(true, {}, seed = 42)
+            }
+        }) { scene ->
+            // Start right after a drawing so the checks below have the whole 400ms to run.
+            scene.awaitBoil()
+            val first = scene.pixels(16_000_000)
+            // Feed frames as a window does; it keeps rendering while the scene has invalidations.
+            for (i in 2..4) scene.render(i * 16_000_000L).close()
+            assertFalse(scene.hasInvalidations(), "Boil must not request a frame on every vsync")
+            scene.awaitBoil()
+            assertFalse(first.contentEquals(scene.pixels(500_000_000)), "Boil must still advance the drawing")
+        }
+    }
+
+    @Test
+    fun platformDisabledAnimationsHoldTheBoil() {
+        val disabledMotion =
+            object : MotionDurationScale {
+                override val scaleFactor = 0f
+            }
+        val scene =
+            ImageComposeScene(400, 500, coroutineContext = disabledMotion) {
+                MaterialTheme { InkletTheme(InkletStyle(boil = 1.0)) { InkletRadioButton(true, {}, seed = 42) } }
+            }
+        try {
+            val still = scene.pixels(0)
+            Thread.sleep(BOIL_WAIT_MILLIS)
+            assertFalse(scene.hasInvalidations())
+            assertTrue(still.contentEquals(scene.pixels(1_000_000_000)))
+        } finally {
+            scene.close()
         }
     }
 
