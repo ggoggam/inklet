@@ -284,6 +284,32 @@ class ControlsTest {
     }
 
     @Test
+    fun holdBoilKeepsTheDrawingWithoutFramesAndReleasingResumesIt() {
+        var held by mutableStateOf(false)
+        var compositions = 0
+        withScene({
+            InkletTheme(InkletStyle(boil = 1.0), holdBoil = { held }) {
+                compositions++
+                InkletRadioButton(true, {}, seed = 42)
+            }
+        }) { scene ->
+            scene.awaitBoil()
+            scene.render(16_000_000).close()
+            held = true
+            val still = scene.pixels(32_000_000)
+            val composed = compositions
+            Thread.sleep(BOIL_WAIT_MILLIS * 2)
+            assertFalse(scene.hasInvalidations(), "A held boil must not ask for frames")
+            assertTrue(still.contentEquals(scene.pixels(1_400_000_000)), "A held boil must keep its drawing")
+            held = false
+            Snapshot.sendApplyNotifications()
+            scene.awaitBoil()
+            assertFalse(still.contentEquals(scene.pixels(2_000_000_000)), "Releasing the hold must resume the boil")
+            assertEquals(composed, compositions, "Holding and releasing must not recompose the theme's content")
+        }
+    }
+
+    @Test
     fun platformDisabledAnimationsHoldTheBoil() {
         val disabledMotion =
             object : MotionDurationScale {

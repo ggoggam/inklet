@@ -21,6 +21,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlin.math.roundToLong
+import kotlin.time.TimeSource
 
 /**
  * Shared pen settings. [roughness] controls the base drawing's irregularity; zero is smooth.
@@ -72,19 +73,24 @@ internal val LocalSketchFrame =
  * (including [InkletStyle.animate]) do not stop loading motion. No font or color scheme is
  * imposed. Outside this provider controls render a static sketch, with loading motion enabled.
  * [motion] configures selection transitions and is inherited by nested themes by default.
+ * [holdBoil] pauses the boil while it returns true, keeping the current drawing, for example
+ * while the user is touching or scrolling. It is read in a snapshot observer, not in
+ * composition, so backing it with snapshot state pauses and resumes without recomposing.
  */
 @Composable
 fun InkletTheme(
     style: InkletStyle = InkletStyle(),
     reduceMotion: Boolean = false,
     motion: InkletMotion = LocalInkletMotion.current,
+    holdBoil: () -> Boolean = { false },
     content: @Composable () -> Unit,
 ) {
     val effective = if (reduceMotion) style.copy(animate = false) else style
+    val hold = rememberUpdatedState(holdBoil)
     val frame =
         if (effective.animate && effective.boil > 0) {
             val pen = remember { mutableIntStateOf(0) }
-            LaunchedEffect(pen) { pen.boil() }
+            LaunchedEffect(pen) { pen.boil(hold) }
             pen
         } else {
             rememberUpdatedState(0)
@@ -98,15 +104,29 @@ fun InkletTheme(
     )
 }
 
+/** The 0.3.1 signature, kept so code compiled against it still links. */
+@Deprecated("Kept for binary compatibility.", level = DeprecationLevel.HIDDEN)
+@Composable
+fun InkletTheme(
+    style: InkletStyle = InkletStyle(),
+    reduceMotion: Boolean = false,
+    motion: InkletMotion = LocalInkletMotion.current,
+    content: @Composable () -> Unit,
+) = InkletTheme(style, reduceMotion, motion, holdBoil = { false }, content = content)
+
 private const val PEN_FRAMES = 3
 private const val PEN_FRAME_MILLIS = 400L
+
+/** Every clock steps on the same timeline, so nested themes change their drawings in one frame. */
+private val penEpoch = TimeSource.Monotonic.markNow()
 
 /**
  * Steps through the pen's drawings on a timer. An infinite transition would ask for a frame on
  * every vsync just to change the drawing three times per cycle; waiting instead leaves the app
- * idle between drawings. A zero [MotionDurationScale] holds the current drawing until it changes.
+ * idle between drawings. A zero [MotionDurationScale] holds the current drawing until it changes,
+ * and so does [hold]; the drawing changes again on the first step after the hold ends.
  */
-private suspend fun MutableIntState.boil() {
+private suspend fun MutableIntState.boil(hold: State<() -> Boolean>) {
     val motion = currentCoroutineContext()[MotionDurationScale]
     while (true) {
         val scale =
@@ -115,7 +135,12 @@ private suspend fun MutableIntState.boil() {
                 motion.scaleFactor > 0f -> motion.scaleFactor
                 else -> snapshotFlow { motion.scaleFactor }.first { it > 0f }
             }
-        delay((PEN_FRAME_MILLIS * scale).roundToLong())
+        val period = (PEN_FRAME_MILLIS * scale).roundToLong().coerceAtLeast(1)
+        delay(period - penEpoch.elapsedNow().inWholeMilliseconds % period)
+        if (hold.value()) {
+            snapshotFlow { hold.value() }.first { !it }
+            continue
+        }
         intValue = (intValue + 1) % PEN_FRAMES
     }
 }
