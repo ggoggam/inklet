@@ -32,6 +32,7 @@ import dev.ggoggam.inklet.InkletTheme
 import org.jetbrains.skia.Bitmap
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -307,6 +308,40 @@ class ControlsTest {
             assertFalse(still.contentEquals(scene.pixels(2_000_000_000)), "Releasing the hold must resume the boil")
             assertEquals(composed, compositions, "Holding and releasing must not recompose the theme's content")
         }
+    }
+
+    @Test
+    fun boilFrameMillisSetsTheBoilsPaceAndAppliesRightAway() {
+        var motion by mutableStateOf(InkletMotion(boilFrameMillis = 5_000))
+        withScene({
+            InkletTheme(InkletStyle(boil = 1.0), motion = motion) {
+                InkletRadioButton(true, {}, seed = 42)
+            }
+        }) { scene ->
+            var time = 0L
+
+            fun nextFrame() = scene.render(++time * 16_000_000).close()
+            // A slow pace keeps the drawing past the default 400ms step.
+            Thread.sleep(BOIL_WAIT_MILLIS)
+            assertFalse(scene.hasInvalidations(), "A 5s pace must not step after 600ms")
+            // A faster pace applies to the wait already under way.
+            motion = motion.copy(boilFrameMillis = 100)
+            Snapshot.sendApplyNotifications()
+            nextFrame()
+            val start = System.nanoTime()
+            repeat(4) {
+                scene.awaitBoil()
+                nextFrame()
+            }
+            val elapsedMillis = (System.nanoTime() - start) / 1_000_000
+            // Four 100ms steps; the default pace would need at least 1200ms.
+            assertTrue(elapsedMillis < 1_000, "Four steps at 100ms took ${elapsedMillis}ms")
+        }
+    }
+
+    @Test
+    fun boilFrameMillisMustBePositive() {
+        assertFailsWith<IllegalArgumentException> { InkletMotion(boilFrameMillis = 0) }
     }
 
     @Test

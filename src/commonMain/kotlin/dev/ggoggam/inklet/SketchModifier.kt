@@ -183,9 +183,12 @@ private data class SketchElement(
 
 /**
  * The pen's drawings for one size: one per boil frame, each in its own [GraphicsLayer], recorded
- * once. On Android this node draws every frame's layer and shows one of them through the layers'
- * alpha. A boil tick only changes those alphas, so it records nothing: neither the paths nor the
- * content around this node. Only a change of size, style or color records the layers again.
+ * once. Only a change of size, style or color records the layers again.
+ *
+ * On Android this node draws every frame's layer and shows one of them through the layers' alpha.
+ * A boil tick only changes those alphas from a snapshot observer, so it records nothing: neither
+ * the paths nor the content around this node. Elsewhere the node reads the clock while drawing,
+ * as before, and draws only the visible frame's layer; a tick records the parent's drawing again.
  */
 private class SketchNode(
     private var element: SketchElement,
@@ -211,13 +214,13 @@ private class SketchNode(
         } else if (next.ink != previous.ink || next.fill != previous.fill || next.scribbleAlpha != previous.scribbleAlpha) {
             recorded = false
         }
-        if (next.frame !== previous.frame) observeFrame()
+        if (redraw != null && next.frame !== previous.frame) observeFrame()
         invalidateDraw()
     }
 
     override fun onAttach() {
         redraw = windowRedraw()
-        observeFrame()
+        if (redraw != null) observeFrame()
     }
 
     override fun onDetach() {
@@ -232,7 +235,8 @@ private class SketchNode(
 
     /**
      * Reads the boil clock outside drawing, so a tick never invalidates the parent's drawing.
-     * The observation outlives each change, so a tick only reads the new value.
+     * The observation outlives each change, so a tick only reads the new value. Android only: the
+     * window redraws a changed alpha there, and observers run on the UI thread.
      */
     private fun observeFrame() {
         var next = 0
@@ -265,13 +269,14 @@ private class SketchNode(
                 recorded = false
             }
         if (!recorded) record(current)
-        drawFrames(backs)
+        val shown = if (redraw != null) frame else element.frame.value
+        drawFrames(backs, shown)
         drawContent()
         val progress = element.strokeProgress?.invoke()?.coerceIn(0f, 1f) ?: 1f
         if (fronts.isEmpty() || progress == 0f) return
         val label = element.labelBounds?.invoke()?.takeUnless { it.isEmpty }
         if (label == null) {
-            drawInk(current, progress)
+            drawInk(current, shown, progress)
         } else {
             // The host's animated cutout handles the settled outline gap. A rough pen
             // can extend past that cutout during motion, so also clear the moving label.
@@ -281,7 +286,7 @@ private class SketchNode(
                 label.right + 4.dp.toPx(),
                 label.bottom + 1.dp.toPx(),
                 ClipOp.Difference,
-            ) { drawInk(current, progress) }
+            ) { drawInk(current, shown, progress) }
         }
     }
 
@@ -289,24 +294,28 @@ private class SketchNode(
      * Where the window can show a layer's new alpha, draw every frame's layer, so a tick needs no
      * new recording. Elsewhere a tick records this drawing again anyway, so draw only the frame shown.
      */
-    private fun DrawScope.drawFrames(layers: List<GraphicsLayer>) {
+    private fun DrawScope.drawFrames(
+        layers: List<GraphicsLayer>,
+        shown: Int,
+    ) {
         if (redraw != null) {
             layers.forEach { drawLayer(it) }
         } else if (layers.isNotEmpty()) {
-            drawLayer(layers[frame % layers.size])
+            drawLayer(layers[shown % layers.size])
         }
     }
 
     private fun DrawScope.drawInk(
         pen: Pen,
+        shown: Int,
         progress: Float,
     ) {
         if (progress == 1f) {
-            drawFrames(fronts)
+            drawFrames(fronts, shown)
             return
         }
         val segment = pen.segment
-        pen.measures(frame % pen.count).forEach { measure ->
+        pen.measures(shown % pen.count).forEach { measure ->
             segment.reset()
             measure.getSegment(0f, measure.length * progress, segment, startWithMoveTo = true)
             drawPath(segment, element.ink, style = pen.stroke)
@@ -332,7 +341,7 @@ private class SketchNode(
             layer.record(this, layoutDirection, size) { drawPath(pen.paths[i], element.ink, style = pen.stroke) }
         }
         for (layers in listOf(backs, fronts)) {
-            layers.forEachIndexed { i, layer -> layer.alpha = if (i == frame % layers.size) 1f else 0f }
+            layers.forEachIndexed { i, layer -> layer.alpha = if (redraw == null || i == frame % layers.size) 1f else 0f }
         }
         recorded = true
     }

@@ -427,8 +427,8 @@ single perturbed gesture; radio dots use a softly irregular filled loop. Closed
 outlines are smoothed through their seam.
 Full pen paths are cached; geometry is not regenerated on each animation tick.
 Progress indicators trim those paths during drawing to reveal the active segment.
-All pen boil shares one theme clock, with three visible updates per 1200ms; nested
-themes step on the same timeline. Interactive controls re-sketch on press, focus, and pointer entry.
+All pen boil shares one theme clock that steps through three drawings, 400ms each by
+default (see [Boil pace](#boil-pace)); nested themes step on the same timeline. Interactive controls re-sketch on press, focus, and pointer entry.
 
 Each sketch records its three boil drawings once per size, style and color, each in its
 own graphics layer, and shows one of them. A boil step only switches which layer is
@@ -472,8 +472,8 @@ InkletTheme(
 These are Compose `FiniteAnimationSpec<Float>` values, so `tween`, `spring`, and
 `snap` are supported. Nested themes inherit motion settings. Reduced motion takes
 precedence over theme settings and control overrides. An initially checked control
-renders complete, and unchecking a checkbox clears its mark immediately. Pen boil
-and loading indicators retain their independent animation settings.
+renders complete, and unchecking a checkbox clears its mark immediately. Loading
+indicators keep their own animation; `InkletMotion` also sets the [boil pace](#boil-pace).
 
 Roughness changes the base drawing; zero gives smooth geometry. Boil is independent
 frame-to-frame displacement, not animation speed; zero stops the idle boil.
@@ -511,6 +511,24 @@ InkletTheme(holdBoil = { touching }) {
 
 Don't hold the boil by changing `InkletStyle` or `reduceMotion`: those are provided
 through a static composition local, so changing them recomposes the whole subtree.
+
+### Boil pace
+
+`InkletMotion.boilFrameMillis` sets how long the pen shows each of its three drawings
+(400ms by default, so a full cycle takes 1200ms). It must be positive, and the
+platform's animation duration scale stretches it like any other animation. Boil
+amplitude stays in `InkletStyle.boil`.
+
+```kotlin
+InkletTheme(motion = InkletMotion(boilFrameMillis = 600)) {
+    // A calmer pen: each drawing stays for 600ms.
+}
+```
+
+A new pace applies to the running boil right away, without waiting for the current
+step to finish. `LocalInkletMotion` is a dynamic composition local, so changing the
+pace recomposes only the controls that read their selection animations from it, not
+the whole subtree. A slower pace also means fewer boil frames, which helps slow phones.
 
 ## Development
 
