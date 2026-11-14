@@ -97,7 +97,7 @@ dependencyResolutionManagement {
 Then add this to `commonMain.dependencies`:
 
 ```kotlin
-implementation("dev.ggoggam.inklet:inklet:0.3.0")
+implementation("dev.ggoggam.inklet:inklet:0.3.1")
 ```
 
 Gradle selects the Android, iOS, desktop or Wasm artifact automatically. Versions up to 0.3.0
