@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
@@ -125,6 +126,8 @@ private fun InkletProgressIndicator(
                         ProgressBarRangeInfo(progress().progressFraction(), 0f..1f)
                     }
             }.size(if (circular) 40.dp else 240.dp, if (circular) 40.dp else 12.dp)
+            // Its own layer: the boil and loading motion redraw only this indicator, not its parent.
+            .graphicsLayer()
             .drawWithCache {
                 val w = size.width / density.toDouble()
                 val h = size.height / density.toDouble()

@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.constrainWidth
@@ -106,6 +107,8 @@ fun TabIndicatorScope.InkletTabRibbonIndicator(
                     }
                 layout(slotWidth, height) { placeable.placeRelative(-centering, 0) }
             }.fillMaxSize()
+            // Its own layer: the boil and tab motion redraw only the ribbon, not the tab row.
+            .graphicsLayer()
             .drawWithCache {
                 val tabs = positions.value
                 val penWidth = style.strokeWidth.toPx()

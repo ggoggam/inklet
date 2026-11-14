@@ -97,7 +97,7 @@ dependencyResolutionManagement {
 Then add this to `commonMain.dependencies`:
 
 ```kotlin
-implementation("dev.ggoggam.inklet:inklet:0.3.1")
+implementation("dev.ggoggam.inklet:inklet:0.3.2")
 ```
 
 Gradle selects the Android, iOS, desktop or Wasm artifact automatically. Versions up to 0.3.0
@@ -158,7 +158,7 @@ Gradle module and artifact, which still includes the Material 3 dependency.
 | `Modifier.inkletBorder()` | Add a pen outline to existing controls, including custom editors |
 | `Modifier.inkletSurface()` | Sketch a filled container behind an existing component's content |
 | `Modifier.inkletDecoration()` | Underline, highlight, or circle around a label/block |
-| `InkletTheme`, `InkletStyle` | Shared animation clock, roughness, boil, stroke width, and motion override |
+| `InkletTheme`, `InkletStyle` | Shared animation clock and its hold, roughness, boil, stroke width, and motion override |
 | `Rough` | Lines, rounded rectangles, circles, ellipses, checkmarks, arrows, scribble fills, and boil variants |
 
 Label standalone selection controls with a content description or a labelled parent.
@@ -427,7 +427,15 @@ single perturbed gesture; radio dots use a softly irregular filled loop. Closed
 outlines are smoothed through their seam.
 Full pen paths are cached; geometry is not regenerated on each animation tick.
 Progress indicators trim those paths during drawing to reveal the active segment.
-All pen boil shares one theme clock, with three visible updates per 1200ms. Interactive controls re-sketch on press, focus, and pointer entry.
+All pen boil shares one theme clock that steps through three drawings, 400ms each by
+default (see [Boil pace](#boil-pace)); nested themes step on the same timeline. Interactive controls re-sketch on press, focus, and pointer entry.
+
+Each sketch records its three boil drawings once per size, style and color, each in its
+own graphics layer, and shows one of them. A boil step only switches which layer is
+visible: it records nothing, neither the paths nor the content around the sketch. On
+Android the window draws again from its existing display lists; elsewhere the sketch's
+parent records its drawing again, which only references the cached layers. Progress and
+tab ribbon indicators have their own layers, so their motion redraws only themselves.
 
 Compose's animation duration scale controls the clock. `reduceMotion = true`
 explicitly removes animation and interaction re-sketching. A control outside a
@@ -464,8 +472,8 @@ InkletTheme(
 These are Compose `FiniteAnimationSpec<Float>` values, so `tween`, `spring`, and
 `snap` are supported. Nested themes inherit motion settings. Reduced motion takes
 precedence over theme settings and control overrides. An initially checked control
-renders complete, and unchecking a checkbox clears its mark immediately. Pen boil
-and loading indicators retain their independent animation settings.
+renders complete, and unchecking a checkbox clears its mark immediately. Loading
+indicators keep their own animation; `InkletMotion` also sets the [boil pace](#boil-pace).
 
 Roughness changes the base drawing; zero gives smooth geometry. Boil is independent
 frame-to-frame displacement, not animation speed; zero stops the idle boil.
@@ -473,6 +481,54 @@ frame-to-frame displacement, not animation speed; zero stops the idle boil.
 Both values accept finite nonnegative numbers; the sample ranges are useful preview
 ranges, not API limits. Very large values can collapse small shapes. Use a nested
 `InkletTheme` to style a subsection independently.
+
+### Holding the boil
+
+Each boil step still draws a frame, and on a slow phone that frame can land in the
+middle of a swipe. `holdBoil` pauses the boil while it returns true and keeps the
+current drawing; the boil resumes on its next step after the hold ends. Back it with
+snapshot state: the theme reads it in a snapshot observer, not in composition, so
+holding and releasing recompose nothing. While held, the boil requests no frames.
+
+```kotlin
+// Hold the boil while a finger is down. To cover flings, also hold until scrolling settles.
+var touching by remember { mutableStateOf(false) }
+InkletTheme(holdBoil = { touching }) {
+    Box(
+        Modifier.pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    touching = event.changes.any { it.pressed }
+                }
+            }
+        },
+    ) {
+        AppContent()
+    }
+}
+```
+
+Don't hold the boil by changing `InkletStyle` or `reduceMotion`: those are provided
+through a static composition local, so changing them recomposes the whole subtree.
+
+### Boil pace
+
+`InkletMotion.boilFrameMillis` sets how long the pen shows each of its three drawings
+(400ms by default, so a full cycle takes 1200ms). It must be positive, and the
+platform's animation duration scale stretches it like any other animation. Boil
+amplitude stays in `InkletStyle.boil`.
+
+```kotlin
+InkletTheme(motion = InkletMotion(boilFrameMillis = 600)) {
+    // A calmer pen: each drawing stays for 600ms.
+}
+```
+
+A new pace applies to the running boil right away, without waiting for the current
+step to finish. `LocalInkletMotion` is a dynamic composition local, so changing the
+pace recomposes only the controls that read their selection animations from it, not
+the whole subtree. A slower pace also means fewer boil frames, which helps slow phones.
 
 ## Development
 
